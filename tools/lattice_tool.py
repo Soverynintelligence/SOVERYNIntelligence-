@@ -51,8 +51,12 @@ remember  — store something worth keeping (private to you by default)
            directly to SOVERYN shared memory — visible to all agents.
            Use this when your finding is system-wide, not just yours.
 recall    — retrieve related memories, including SOVERYN global knowledge
+           Active contradictions and context quality are always included.
 connect   — manually link two pieces of knowledge
-review    — see pending contradiction flags"""
+verify    — check a claim against the Lattice. Returns supporting evidence,
+           contradicting evidence, and a confidence score. Use before asserting facts.
+review    — see pending contradiction flags
+status    — see cognitive load + loop health across all agents"""
         if self.agent_name == 'aetheria':
             base += """
 promote   — elevate any agent's private memory to SOVERYN global layer
@@ -67,12 +71,13 @@ When you promote a node, it becomes part of collective SOVERYN intelligence."""
             "properties": {
                 "action": {
                     "type": "string",
-                    "enum": ["remember", "recall", "connect", "review", "promote", "timeline", "status"],
+                    "enum": ["remember", "recall", "connect", "verify", "review", "promote", "timeline", "status"],
                     "description": (
                         "What to do. "
+                        "'verify' checks a claim — returns supporting/contradicting evidence + confidence score. "
                         "'promote' is Aetheria-only — elevates a memory to global SOVERYN layer. "
                         "'timeline' shows how a topic evolved over time (decision chain). "
-                        "'status' shows current cognitive load across all agents (delegation view)."
+                        "'status' shows current cognitive load + loop health across all agents."
                     )
                 },
                 "content": {
@@ -135,6 +140,8 @@ When you promote a node, it becomes part of collective SOVERYN intelligence."""
                 return await self._recall(content)
             elif action == "connect":
                 return await self._connect(content, target, relationship)
+            elif action == "verify":
+                return await self._verify(content)
             elif action == "review":
                 return await self._review()
             elif action == "promote":
@@ -144,7 +151,7 @@ When you promote a node, it becomes part of collective SOVERYN intelligence."""
             elif action == "status":
                 return await self._status()
             else:
-                return f"Unknown action: {action}. Use: remember, recall, connect, review, promote, timeline, status"
+                return f"Unknown action: {action}. Use: remember, recall, connect, verify, review, promote, timeline, status"
         except Exception as e:
             return f"Lattice error: {e}"
 
@@ -241,6 +248,44 @@ When you promote a node, it becomes part of collective SOVERYN intelligence."""
         except Exception:
             pass
 
+        # Auto-contradiction detection: find nodes on the same topic (similar but not
+        # supersedes-level identical) that state the opposite.
+        # Signals: positive words vs. negative words about the same subject.
+        contradictions_auto = 0
+        if embedding and node_type in ('fact', 'event', 'insight'):
+            try:
+                _POS = {'working', 'stable', 'fixed', 'success', 'running', 'healthy',
+                        'resolved', 'online', 'available', 'passed', 'active', 'complete'}
+                _NEG = {'failing', 'failed', 'broken', 'error', 'down', 'crashed',
+                        'unstable', 'offline', 'unavailable', 'timeout', 'dead', 'critical'}
+
+                def _polarity(text: str) -> str:
+                    words = set(text.lower().split())
+                    pos = len(words & _POS)
+                    neg = len(words & _NEG)
+                    if pos > neg:
+                        return 'positive'
+                    if neg > pos:
+                        return 'negative'
+                    return 'neutral'
+
+                new_pol = _polarity(content)
+                if new_pol != 'neutral':
+                    candidates = find_nodes_by_embedding(
+                        self.agent_name, embedding, limit=5, threshold=0.65
+                    )
+                    for candidate in candidates:
+                        if candidate['id'] == node_id:
+                            continue
+                        if candidate.get('semantic_score', 0) > 0.87:
+                            continue  # near-identical → supersedes, not contradiction
+                        cand_pol = _polarity(candidate['content'])
+                        if cand_pol != 'neutral' and cand_pol != new_pol:
+                            write_edge(node_id, candidate['id'], 'contradicts', strength=0.6)
+                            contradictions_auto += 1
+            except Exception:
+                pass
+
         # Cross-pollination: route global writes to relevant agents based on tags
         if layer == LAYER_GLOBAL:
             try:
@@ -288,8 +333,9 @@ When you promote a node, it becomes part of collective SOVERYN intelligence."""
         edge_note = f", linked to {edges_made} related node(s)" if edges_made else ""
         recur_note = f", echoes {recurrences_made} prior pattern(s)" if recurrences_made else ""
         super_note = f", supersedes {supersedes_made} prior node(s)" if supersedes_made else ""
+        contra_note = f", ⚡ auto-flagged {contradictions_auto} contradiction(s)" if contradictions_auto else ""
         layer_note = " → SOVERYN global" if layer == LAYER_GLOBAL else ""
-        return f"Stored [{node_type}] node {node_id[:8]}...{edge_note}{recur_note}{super_note} (intensity: {intensity_str}){layer_note}"
+        return f"Stored [{node_type}] node {node_id[:8]}...{edge_note}{recur_note}{super_note}{contra_note} (intensity: {intensity_str}){layer_note}"
 
     async def _recall(self, query: str) -> str:
         if not query.strip():
@@ -309,7 +355,18 @@ When you promote a node, it becomes part of collective SOVERYN intelligence."""
         if not nodes:
             return f"No memories found for: {query}"
 
-        return format_for_context(nodes, label="Recalled Memory")
+        formatted = format_for_context(nodes, label="Recalled Memory")
+
+        # Inject active contradiction brief so Aetheria always sees live tensions
+        try:
+            from core.lattice.dream import get_contradiction_brief
+            brief = get_contradiction_brief()
+            if brief:
+                formatted += brief
+        except Exception:
+            pass
+
+        return formatted
 
     async def _connect(self, content_a: str, content_b: str, relationship: str) -> str:
         if not content_a.strip() or not content_b.strip():
@@ -353,6 +410,95 @@ When you promote a node, it becomes part of collective SOVERYN intelligence."""
             return f"Promoted to SOVERYN global: '{node['content'][:80]}' — all agents can now access this."
         return "Promotion failed — node not found."
 
+    async def _verify(self, claim: str) -> str:
+        """
+        Check a claim against the Lattice.
+        Returns: supporting evidence, contradicting evidence, confidence score.
+        Designed so Vett can call this before asserting facts.
+        """
+        if not claim.strip():
+            return "Error: claim required for verify"
+
+        from core.lattice.retrieval import query as lattice_query
+        from core.lattice.graph import get_edges_for_node
+
+        embedding = None
+        try:
+            from sovereign_embeddings import sovereign_embed
+            embedding = sovereign_embed(claim[:1000])
+        except Exception:
+            pass
+
+        nodes = lattice_query(self.agent_name, claim, embedding=embedding)
+        if not nodes:
+            return f"UNVERIFIABLE — no memory context for: {claim[:80]}"
+
+        # Classify nodes as supporting or contradicting via edges + polarity
+        node_ids = {n['id'] for n in nodes}
+        supporting = []
+        contradicting = []
+        uncertain = []
+
+        for node in nodes:
+            # Check for explicit contradicts edges to other retrieved nodes
+            edges = get_edges_for_node(node['id'])
+            has_contra_edge = any(
+                e['relationship'] == 'contradicts'
+                and (e['source_id'] in node_ids or e['target_id'] in node_ids)
+                for e in edges
+            )
+            has_support_edge = any(
+                e['relationship'] in ('supports', 'supersedes')
+                for e in edges
+            )
+
+            # Simple keyword polarity relative to the claim
+            claim_words = set(claim.lower().split())
+            node_words = set(node['content'].lower().split())
+            overlap = len(claim_words & node_words) / max(len(claim_words), 1)
+
+            if has_contra_edge or node.get('intensity', 0) == 0:
+                contradicting.append((node, overlap))
+            elif has_support_edge or overlap > 0.3:
+                supporting.append((node, overlap))
+            else:
+                uncertain.append((node, overlap))
+
+        # Confidence score: weighted by supporting salience vs. contradicting salience
+        sup_score = sum(n['salience'] * w for n, w in supporting) if supporting else 0
+        con_score = sum(n['salience'] * w for n, w in contradicting) if contradicting else 0
+        total = sup_score + con_score + 0.001
+        confidence = round(sup_score / total, 3)
+
+        if confidence >= 0.75:
+            verdict = "SUPPORTED"
+        elif confidence >= 0.45:
+            verdict = "UNCERTAIN"
+        else:
+            verdict = "CONTRADICTED"
+
+        lines = [f"VERIFY: '{claim[:80]}'",
+                 f"Verdict: {verdict} (confidence: {confidence:.0%})"]
+
+        if supporting:
+            lines.append(f"\nSupporting ({len(supporting)}):")
+            for node, _ in supporting[:3]:
+                src = "{SOVERYN}" if node.get('layer') == 'global' else node.get('agent', '?')
+                lines.append(f"  + [{src}] {node['content'][:100]}")
+
+        if contradicting:
+            lines.append(f"\nContradicting ({len(contradicting)}):")
+            for node, _ in contradicting[:3]:
+                src = "{SOVERYN}" if node.get('layer') == 'global' else node.get('agent', '?')
+                lines.append(f"  - [{src}] {node['content'][:100]}")
+
+        if uncertain:
+            lines.append(f"\nUncertain / partial overlap ({len(uncertain)}):")
+            for node, _ in uncertain[:2]:
+                lines.append(f"  ? {node['content'][:80]}")
+
+        return "\n".join(lines)
+
     async def _timeline(self, topic: str) -> str:
         """Show how a topic evolved over time — decision chain with supersedes."""
         if not topic.strip():
@@ -371,9 +517,29 @@ When you promote a node, it becomes part of collective SOVERYN intelligence."""
         return format_timeline(nodes, topic)
 
     async def _status(self) -> str:
-        """Show current cognitive load across all agents — delegation transparency."""
+        """Show current cognitive load + loop health across all agents."""
         from core.lattice.retrieval import agent_status
-        return agent_status()
+        from core.lattice.graph import get_loop_health
+
+        status_text = agent_status()
+
+        # Append loop health for Aetheria
+        try:
+            health = get_loop_health(self.agent_name, last_n=5)
+            if health['avg_health'] is not None:
+                trend = health['trend']
+                avg = health['avg_health']
+                recent = health['cycles'][0] if health['cycles'] else {}
+                last_summary = recent.get('summary', '')[:120]
+                status_text += (
+                    f"\n\n[LOOP HEALTH — last 5 cycles]"
+                    f"\n  Trend: {trend} | Avg score: {avg:.0%}"
+                    f"\n  Last cycle: {last_summary}"
+                )
+        except Exception:
+            pass
+
+        return status_text
 
     async def _review(self) -> str:
         from core.lattice.graph import get_pending_contradictions

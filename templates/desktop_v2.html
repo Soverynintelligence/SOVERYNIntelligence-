@@ -1057,8 +1057,8 @@
           try {
             const j = JSON.parse(raw);
             if (j.session_id) sessionId = j.session_id;
-            if (j.token) { full += j.token; bubble.textContent = full; area.scrollTop = area.scrollHeight; }
-            if (j.response) { full = j.response; bubble.textContent = full; area.scrollTop = area.scrollHeight; }
+            if (j.token) { full += j.token; _renderBubble(bubble, full); area.scrollTop = area.scrollHeight; }
+            if (j.response) { full = j.response; _renderBubble(bubble, full); area.scrollTop = area.scrollHeight; }
           } catch {}
         }
       }
@@ -1300,6 +1300,23 @@
     } catch (e) { alert('Upload error: ' + e.message); clearAttachD(); }
   });
 
+  // ── BUBBLE RENDERER ──────────────────────────────────────────────────
+  // Handles plain text AND IMAGE:url responses from agents.
+  function _renderBubble(el, text) {
+    if (text && text.startsWith('IMAGE:')) {
+      const url = text.slice(6).trim();
+      el.innerHTML = '';
+      const img = document.createElement('img');
+      img.src = url;
+      img.alt = 'Generated image';
+      img.style.cssText = 'max-width:100%;border-radius:8px;margin-top:4px;display:block;';
+      img.onerror = () => { el.textContent = `[Image failed to load: ${url}]`; };
+      el.appendChild(img);
+    } else {
+      el.textContent = text;
+    }
+  }
+
   // ── VOICE ────────────────────────────────────────────────────────────
   let dMediaRec = null, dVoiceActive = false, dAudioChunks = [];
 
@@ -1465,7 +1482,7 @@
               userBubble.textContent = transcript;
             } else if (ev.type === 'agent_text') {
               full = ev.text;
-              agentBubble.textContent = full;
+              _renderBubble(agentBubble, full);
               area.scrollTop = area.scrollHeight;
             } else if (ev.type === 'tts' && ev.url) {
               _enqueueAudio(ev.url);

@@ -13,8 +13,38 @@ from core.tool_base import Tool
 from typing import Any, Dict
 
 COMFYUI_URL = "http://127.0.0.1:8188"
+COMFYUI_CHECKPOINTS = Path("/home/jon-deoliveira/ComfyUI/models/checkpoints")
 OUTPUT_DIR = Path("/home/jon-deoliveira/soveryn_complete/static/generated")
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+# Preference order — first match wins
+_CHECKPOINT_PREFERENCE = [
+    "juggernaut",
+    "realvis",
+    "dreamshaper",
+    "sdxl_lightning",
+    "sd_xl_refiner",
+    "sd_xl_base",
+    "v1-5",
+]
+
+def _best_checkpoint() -> str:
+    """Return the best available checkpoint filename."""
+    try:
+        available = [
+            f.name for f in COMFYUI_CHECKPOINTS.iterdir()
+            if f.suffix in ('.safetensors', '.ckpt') and f.name != 'put_checkpoints_here'
+        ]
+    except Exception:
+        return "sd_xl_base_1.0.safetensors"
+
+    for pref in _CHECKPOINT_PREFERENCE:
+        for name in available:
+            if pref.lower() in name.lower():
+                print(f"[ImageGen] Selected checkpoint: {name}")
+                return name
+
+    return available[0] if available else "sd_xl_base_1.0.safetensors"
 
 
 def _imagen3(prompt: str) -> str:
@@ -57,15 +87,20 @@ def _comfyui(prompt: str, negative_prompt: str, width: int, height: int, steps: 
     except Exception:
         return "Image generation unavailable — ComfyUI is not running and Imagen API failed."
 
+    ckpt = _best_checkpoint()
     workflow = {
-        "1": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": "sd_xl_base_1.0.safetensors"}},
+        "1": {"class_type": "CheckpointLoaderSimple", "inputs": {"ckpt_name": ckpt}},
         "2": {"class_type": "CLIPTextEncode", "inputs": {"text": prompt, "clip": ["1", 1]}},
-        "3": {"class_type": "CLIPTextEncode", "inputs": {"text": negative_prompt, "clip": ["1", 1]}},
-        "4": {"class_type": "EmptyLatentImage", "inputs": {"width": width, "height": height, "batch_size": 1}},
+        "3": {"class_type": "CLIPTextEncode", "inputs": {
+            "text": negative_prompt, "clip": ["1", 1]
+        }},
+        "4": {"class_type": "EmptyLatentImage", "inputs": {
+            "width": width, "height": height, "batch_size": 1
+        }},
         "5": {"class_type": "KSampler", "inputs": {
             "model": ["1", 0], "positive": ["2", 0], "negative": ["3", 0],
             "latent_image": ["4", 0], "seed": int(time.time()) % 2**32,
-            "steps": steps, "cfg": 7.0, "sampler_name": "dpmpp_2m",
+            "steps": steps, "cfg": 6.5, "sampler_name": "dpmpp_2m_sde",
             "scheduler": "karras", "denoise": 1.0
         }},
         "6": {"class_type": "VAEDecode", "inputs": {"samples": ["5", 0], "vae": ["1", 2]}},
@@ -87,7 +122,21 @@ def _comfyui(prompt: str, negative_prompt: str, width: int, height: int, steps: 
                 images = node_output.get("images", [])
                 if images:
                     img = images[0]
-                    return f"{COMFYUI_URL}/view?filename={urllib.parse.quote(img['filename'])}&subfolder={img.get('subfolder','')}&type={img.get('type','output')}"
+                    # Download image from ComfyUI and save to static/generated/
+                    # so the browser can load it without reaching localhost:8188
+                    view_url = (
+                        f"{COMFYUI_URL}/view?filename={urllib.parse.quote(img['filename'])}"
+                        f"&subfolder={img.get('subfolder','')}&type={img.get('type','output')}"
+                    )
+                    try:
+                        filename = f"comfy_{int(time.time())}.png"
+                        out_path = OUTPUT_DIR / filename
+                        with urllib.request.urlopen(view_url, timeout=30) as img_r:
+                            out_path.write_bytes(img_r.read())
+                        return f"/static/generated/{filename}"
+                    except Exception as e:
+                        print(f"[ImageGen] Failed to copy ComfyUI image: {e}")
+                        return view_url  # fallback to direct URL
     return "Image generation timed out."
 
 

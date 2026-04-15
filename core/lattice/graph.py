@@ -260,6 +260,78 @@ def find_nodes_by_embedding(
     return sorted(results, key=lambda n: n['semantic_score'], reverse=True)[:limit]
 
 
+def get_core_nodes(agent: str) -> List[Dict]:
+    """
+    Return all core-intensity nodes visible to this agent.
+    Core nodes are system truths — they are ALWAYS injected into context
+    regardless of query relevance. Never excluded by search.
+    """
+    with _get_conn() as conn:
+        rows = conn.execute("""
+            SELECT * FROM nodes
+            WHERE intensity >= ?
+              AND ((agent = ? AND layer != ?) OR layer = ?)
+            ORDER BY salience DESC
+        """, (INTENSITY_CORE, agent, LAYER_GLOBAL, LAYER_GLOBAL)).fetchall()
+    return [dict(r) for r in rows]
+
+
+def log_loop_outcome(agent: str, session_node_ids: List[str],
+                     tasks_completed: int = 0, tasks_failed: int = 0) -> float:
+    """
+    Compute and record a loop health score after a session.
+    Score 0.0–1.0: measures execution quality for the autonomy cycle.
+    Returns the score.
+    """
+    if not session_node_ids:
+        return 0.0
+
+    n_nodes = len(set(session_node_ids))
+    # Penalty for failures, bonus for completions
+    raw = (tasks_completed * 1.0 - tasks_failed * 0.5 + n_nodes * 0.1)
+    score = round(min(max(raw / max(n_nodes + tasks_completed + 1, 1), 0.0), 1.0), 3)
+
+    with _get_conn() as conn:
+        try:
+            conn.execute(
+                "ALTER TABLE dream_log ADD COLUMN loop_health REAL DEFAULT NULL"
+            )
+        except Exception:
+            pass
+        # Update the most recent dream log for this agent with the score
+        conn.execute("""
+            UPDATE dream_log SET loop_health = ?
+            WHERE agent = ? AND id = (
+                SELECT id FROM dream_log WHERE agent = ? ORDER BY ran_at DESC LIMIT 1
+            )
+        """, (score, agent, agent))
+
+    return score
+
+
+def get_loop_health(agent: str, last_n: int = 10) -> Dict[str, Any]:
+    """Return loop health trend for the last N dream cycles."""
+    with _get_conn() as conn:
+        try:
+            rows = conn.execute("""
+                SELECT ran_at, loop_health, nodes_read, edges_created,
+                       nodes_merged, contradictions_flagged, summary
+                FROM dream_log WHERE agent = ?
+                ORDER BY ran_at DESC LIMIT ?
+            """, (agent, last_n)).fetchall()
+        except Exception:
+            rows = []
+    cycles = [dict(r) for r in rows]
+    scores = [c['loop_health'] for c in cycles if c.get('loop_health') is not None]
+    return {
+        'cycles': cycles,
+        'avg_health': round(sum(scores) / len(scores), 3) if scores else None,
+        'trend': 'improving' if len(scores) >= 2 and scores[0] > scores[-1]
+                 else 'declining' if len(scores) >= 2 and scores[0] < scores[-1]
+                 else 'stable',
+    }
+
+
 def get_agent_activity(agents: Optional[List[str]] = None, limit: int = 5) -> Dict[str, Any]:
     """
     Delegation transparency: recent Lattice activity per agent.

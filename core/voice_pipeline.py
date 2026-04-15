@@ -38,6 +38,8 @@ def _sse(obj: dict) -> str:
 
 def _clean_for_tts(text: str) -> str:
     """Strip markdown and artifacts that sound bad when spoken."""
+    if text.startswith('IMAGE:'):
+        return "I've generated the image for you."
     text = re.sub(r'\*{1,3}', '', text)
     text = re.sub(r'#{1,6}\s*', '', text)
     text = re.sub(r'`{1,3}[^`]*`{1,3}', '', text)

@@ -484,9 +484,17 @@ class AgentLoop:
         if self._session_node_ids:
             try:
                 from core.lattice.dream import run as dream_run
+                from core.lattice.graph import log_loop_outcome
                 result = dream_run(self.agent_name, self._session_node_ids)
-                if result.get('contradictions_flagged', 0) > 0:
+                if result.get('contradictions_flagged', 0) > 0 or result.get('edges_created', 0) > 0:
                     print(f"[Dream] {self.agent_name}: {result['summary']}", flush=True)
+                # Log loop health — tasks_completed approximated by tool iterations that succeeded
+                log_loop_outcome(
+                    agent=self.agent_name,
+                    session_node_ids=self._session_node_ids,
+                    tasks_completed=result.get('edges_created', 0) + result.get('nodes_merged', 0),
+                    tasks_failed=result.get('contradictions_flagged', 0),
+                )
                 self._session_node_ids = []
             except Exception as e:
                 print(f"[Dream Cycle] Error: {e}")
@@ -1126,13 +1134,17 @@ Current date and time: {current_datetime}
                     yield final
                 return
 
-            # generate_image fired — return the URL directly, no re-prompt
+            # generate_image fired — return IMAGE:url so the UI can render it
             if any(tc['name'] == 'generate_image' for tc in deduped_calls):
                 import re as _re_img
-                url_match = _re_img.search(r'https?://\S+', '\n'.join(accumulated_context))
-                image_url = url_match.group(0).rstrip('.,)') if url_match else '\n'.join(accumulated_context)
-                await self._store_stream_memory(message, image_url)
-                yield image_url
+                combined = '\n'.join(accumulated_context)
+                # Match /static/generated/... or http(s):// URLs
+                url_match = _re_img.search(r'(/static/generated/\S+|https?://\S+)', combined)
+                image_url = url_match.group(0).rstrip('.,)') if url_match else combined.strip()
+                # Prefix with IMAGE: so the UI knows to render an <img> tag
+                response = f"IMAGE:{image_url}"
+                await self._store_stream_memory(message, response)
+                yield response
                 return
 
             elif self.agent_name == "scout":

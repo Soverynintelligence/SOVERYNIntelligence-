@@ -7,6 +7,7 @@ from typing import List, Dict, Tuple, Optional, Any
 from .graph import (
     find_nodes_by_keywords, find_nodes_by_embedding,
     get_edges_for_node, get_node, touch_node,
+    get_core_nodes,
     _get_conn, LAYER_GLOBAL,
 )
 
@@ -120,7 +121,43 @@ def query(
             touch_node(node_id)
             results.append(node)
 
+    # Always inject core nodes — system truths surface regardless of query match
+    seen_ids = {n['id'] for n in results}
+    for core_node in get_core_nodes(agent):
+        if core_node['id'] not in seen_ids:
+            core_node['relevance_score'] = 1.0
+            core_node['is_core'] = True
+            results.append(core_node)
+            touch_node(core_node['id'])
+
     return results
+
+
+def context_quality(nodes: List[Dict]) -> Dict:
+    """
+    Score the retrieval quality so Aetheria knows how anchored she is.
+    Returns: {'score': 0.0-1.0, 'state': str, 'n': int, 'n_core': int}
+    """
+    if not nodes:
+        return {'score': 0.0, 'state': 'blind — no memory context', 'n': 0, 'n_core': 0}
+
+    scores = [n.get('relevance_score', n.get('salience', 0.3)) for n in nodes]
+    avg = sum(scores) / len(scores)
+    n_core = sum(1 for n in nodes if n.get('is_core') or n.get('intensity', 0) >= 1.0)
+
+    if avg >= 0.7 or n_core > 0:
+        state = 'strong context'
+    elif avg >= 0.45:
+        state = 'partial context'
+    else:
+        state = 'weak context — treat with low confidence'
+
+    return {
+        'score': round(avg, 3),
+        'state': state,
+        'n': len(nodes),
+        'n_core': n_core,
+    }
 
 
 def format_for_context(nodes: List[Dict], label: str = "Relevant Memory") -> str:
@@ -128,7 +165,15 @@ def format_for_context(nodes: List[Dict], label: str = "Relevant Memory") -> str
     if not nodes:
         return ""
     import json as _json
-    lines = [f"\n\n[{label}]"]
+
+    quality = context_quality(nodes)
+    header = (
+        f"[{label} — {quality['state']}, {quality['n']} nodes"
+        + (f", {quality['n_core']} core" if quality['n_core'] else "")
+        + "]"
+    )
+
+    lines = [f"\n\n{header}"]
     for node in nodes:
         tags = ""
         try:
@@ -138,7 +183,8 @@ def format_for_context(nodes: List[Dict], label: str = "Relevant Memory") -> str
         except Exception:
             pass
         source = " {SOVERYN}" if node.get('layer') == 'global' else f" [{node.get('agent', '?')}]"
-        lines.append(f"- ({node['type']}){tags}{source} {node['content']}")
+        core_marker = " ★CORE" if node.get('is_core') or node.get('intensity', 0) >= 1.0 else ""
+        lines.append(f"- ({node['type']}){tags}{source}{core_marker} {node['content']}")
     return "\n".join(lines)
 
 
