@@ -218,8 +218,8 @@ def create_tools_for_agent(agent_name):
         tools.register(ApplyFixTool())
         tools.register(ReviewQueueTool())
         tools.register(TelegramTool(
-            token=os.environ.get('TELEGRAM_TOKEN', '8492468039:AAH5rKU95kkEAGECYVXGQIR1l4VwVaizGVE'),
-            chat_id=os.environ.get('TELEGRAM_CHAT_ID', '1567273624')
+            token=os.environ.get('TELEGRAM_TOKEN', ''),
+            chat_id=os.environ.get('TELEGRAM_CHAT_ID', '')
         ))
         tools.register(LogReaderTool())
         from tools.code_graph_tool import CodeGraphTool
@@ -274,8 +274,8 @@ def create_tools_for_agent(agent_name):
         tools.register(ReviewQueueTool())
         tools.register(BanditTool())
         tools.register(TelegramTool(
-            token=os.environ.get('TELEGRAM_TOKEN', '8492468039:AAH5rKU95kkEAGECYVXGQIR1l4VwVaizGVE'),
-            chat_id=os.environ.get('TELEGRAM_CHAT_ID', '1567273624')
+            token=os.environ.get('TELEGRAM_TOKEN', ''),
+            chat_id=os.environ.get('TELEGRAM_CHAT_ID', '')
         ))
         tools.register(LogReaderTool())
         return tools
@@ -2275,7 +2275,7 @@ def agent_to_agent_chat():
         
         # Get agent loop for recipient
         loop = agent_loops.get(to_agent)
-        if not agent_loop_obj:
+        if not loop:
             return jsonify({'error': f'Agent {to_agent} not found'}), 404
         
         # Process message (agent receives and responds)
@@ -2463,87 +2463,7 @@ CONVERSATION SO FAR:
         traceback.print_exc()
         return jsonify({'error': str(e)}), 500
 
-@app.route('/generate_image', methods=['POST'])
-def generate_image():
-    try:
-        data = request.get_json()
-        print(f"Received data: {data}", flush=True)
-        prompt = data.get('prompt', '')
-        agent = data.get('agent', 'unknown')
-        print(f"Prompt: {prompt}, Agent: {agent}", flush=True)
-
-        # Enhance prompt
-        enhanced_prompt = f"{prompt}, highly detailed, dramatic lighting, 8k, photorealistic"
-
-        workflow = {
-            "1": {"inputs": {"unet_name": "flux1-schnell.safetensors", "weight_dtype": "default"}, "class_type": "UNETLoader"},
-            "2": {"inputs": {"clip_name1": "t5xxl_fp16.safetensors", "clip_name2": "t5xxl_fp16.safetensors", "type": "flux", "device": "default"}, "class_type": "DualCLIPLoader"},
-            "3": {"inputs": {"vae_name": "ae.safetensors"}, "class_type": "VAELoader"},
-            "4": {"inputs": {"text": enhanced_prompt, "clip": ["2", 0]}, "class_type": "CLIPTextEncode"},
-            "5": {"inputs": {"text": "ugly, blurry, low quality, watermark, cartoon, Disney, fantasy, clean, polished", "clip": ["2", 0]}, "class_type": "CLIPTextEncode"},
-            "6": {"inputs": {"width": 1024, "height": 1024, "batch_size": 1}, "class_type": "EmptyLatentImage"},
-            "7": {"inputs": {"seed": random.randint(0, 2**32), "steps": 25, "cfg": 1.0, "sampler_name": "euler", "scheduler": "simple", "denoise": 1.0, "model": ["1", 0], "positive": ["4", 0], "negative": ["5", 0], "latent_image": ["6", 0]}, "class_type": "KSampler"},
-            "8": {"inputs": {"samples": ["7", 0], "vae": ["3", 0]}, "class_type": "VAEDecode"},
-            "9": {"inputs": {"filename_prefix": f"soveryn_{agent}_{int(time.time())}", "images": ["8", 0]}, "class_type": "SaveImage"}
-        }
-
-        # Queue the prompt
-        response = requests.post("http://127.0.0.1:8188/prompt", json={"prompt": workflow}, timeout=30)
-
-        if response.status_code != 200:
-            return jsonify({'error': 'ComfyUI error'}), 500
-
-        result = response.json()
-        prompt_id = result.get('prompt_id')
-
-        # Wait for generation
-        max_wait = 120
-        waited = 0
-
-        while waited < max_wait:
-            time.sleep(2)
-            waited += 2
-
-            history_response = requests.get(f"http://127.0.0.1:8188/history/{prompt_id}", timeout=10)
-
-            if history_response.status_code == 200:
-                history = history_response.json()
-
-                if prompt_id in history:
-                    outputs = history[prompt_id].get('outputs', {})
-
-                    for node_id, node_output in outputs.items():
-                        if 'images' in node_output:
-                            images = node_output['images']
-                            if images:
-                                image_info = images[0]
-                                filename = image_info['filename']
-                                subfolder = image_info.get('subfolder', '')
-
-                                source_path = os.path.join('ComfyUI', 'output', subfolder, filename) if subfolder else os.path.join('ComfyUI', 'output', filename)
-                                dest_filename = f"{agent}_{int(time.time())}.png"
-                                dest_path = os.path.join('static', dest_filename)
-
-                                os.makedirs('static', exist_ok=True)
-
-                                import shutil
-                                shutil.copy(source_path, dest_path)
-
-                                return jsonify({
-                                    'status': 'complete',
-                                    'image_url': f'/static/{dest_filename}',
-                                    'prompt': prompt
-                                })
-
-        return jsonify({'error': 'Generation timeout'}), 500
-
-    except requests.exceptions.ConnectionError:
-        return jsonify({'error': 'ComfyUI not running. Please start ComfyUI first.'}), 503
-    except Exception as e:
-        print(f"IMAGE GENERATION ERROR: {e}", flush=True)
-        import traceback
-        traceback.print_exc()
-        return jsonify({"error": str(e)}), 500
+# /generate_image removed — image generation handled via ImageGenTool (Aetheria tool call)
 
 # =============================================================================
 # AUTONOMOUS HEARTBEAT - Aetheria's Background Thinking with Telegram
@@ -2555,8 +2475,8 @@ if workspace_path.exists():
         from heartbeat_integrated import AetheriaAutonomy
         
         # Get Telegram credentials from environment variables
-        TELEGRAM_TOKEN = '8492468039:AAH5rKU95kkEAGECYVXGQIR1l4VwVaizGVE'
-        TELEGRAM_CHAT_ID = '1567273624'
+        TELEGRAM_TOKEN = ''
+        TELEGRAM_CHAT_ID = ''
         
         # Initialize heartbeat with Telegram
         heartbeat = AetheriaAutonomy(
@@ -2878,8 +2798,8 @@ def api_fix_reject(fix_id):
 def _start_telegram_fix_poller():
     import urllib.request, urllib.error, threading, time
 
-    TG_TOKEN   = os.environ.get('TELEGRAM_TOKEN',   '8492468039:AAH5rKU95kkEAGECYVXGQIR1l4VwVaizGVE')
-    TG_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '1567273624')
+    TG_TOKEN   = os.environ.get('TELEGRAM_TOKEN',   '')
+    TG_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '')
     offset = [0]
 
     def _answer_callback(callback_id):
