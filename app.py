@@ -2475,8 +2475,8 @@ if workspace_path.exists():
         from heartbeat_integrated import AetheriaAutonomy
         
         # Get Telegram credentials from environment variables
-        TELEGRAM_TOKEN = ''
-        TELEGRAM_CHAT_ID = ''
+        TELEGRAM_TOKEN = os.environ.get('TELEGRAM_TOKEN', '')
+        TELEGRAM_CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID', '')
         
         # Initialize heartbeat with Telegram
         heartbeat = AetheriaAutonomy(
