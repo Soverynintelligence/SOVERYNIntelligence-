@@ -1,0 +1,551 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>SOVERYN Mobile</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black:       #000000;
+    --bg-card:     #1c1c1e;
+    --bg-input:    #1c1c1e;
+    --bg-bubble-agent: #2a2a2e;
+    --bg-bubble-user:  #3a5070;
+    --gold:        #d4825a;
+    --gold-dim:    rgba(212,130,90,0.18);
+    --gold-border: rgba(212,130,90,0.5);
+    --text:        #ffffff;
+    --text-sec:    #aaaaaa;
+    --text-muted:  #555555;
+    --dot-active:  #d4825a;
+    --border:      rgba(255,255,255,0.08);
+    --font: 'DM Sans', system-ui, sans-serif;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    height: 100%; background: var(--black);
+    color: var(--text); font-family: var(--font);
+    -webkit-font-smoothing: antialiased;
+    overflow: hidden;
+  }
+  #app {
+    display: flex; flex-direction: column;
+    height: 100dvh; max-width: 430px; margin: 0 auto;
+    background: var(--black);
+  }
+
+  /* ── HEADER ── */
+  .header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px 10px;
+    flex-shrink: 0;
+  }
+  .wordmark {
+    font-size: 26px; font-weight: 700;
+    letter-spacing: 0.1em; color: var(--gold);
+    text-transform: uppercase;
+  }
+  .gear-btn {
+    width: 36px; height: 36px;
+    background: transparent; border: none;
+    color: var(--text-sec); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .gear-btn svg { width: 26px; height: 26px; }
+
+  /* ── AGENT TABS ── */
+  .agent-tabs {
+    display: flex; gap: 8px;
+    padding: 0 16px 12px;
+    overflow-x: auto; flex-shrink: 0;
+  }
+  .agent-tabs::-webkit-scrollbar { display: none; }
+  .agent-tab {
+    padding: 6px 16px;
+    border-radius: 20px;
+    border: 1.5px solid var(--text-muted);
+    background: transparent;
+    color: var(--text-sec);
+    font-size: 14px; font-weight: 500;
+    font-family: var(--font);
+    white-space: nowrap; cursor: pointer;
+    transition: all 0.15s;
+    flex-shrink: 0;
+  }
+  .agent-tab.active {
+    border-color: var(--gold-border);
+    color: var(--gold);
+    background: var(--gold-dim);
+  }
+
+  /* ── CHAT AREA ── */
+  .chat-scroll {
+    flex: 1; overflow-y: auto; overflow-x: hidden;
+    padding: 8px 12px;
+    display: flex; flex-direction: column; gap: 10px;
+  }
+  .chat-scroll::-webkit-scrollbar { display: none; }
+
+  .bubble-row { display: flex; align-items: flex-end; gap: 8px; }
+  .bubble-row.user { flex-direction: row-reverse; }
+
+  /* left-edge dot for agent */
+  .agent-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    background: var(--gold);
+    flex-shrink: 0;
+    margin-bottom: 10px;
+    opacity: 0.85;
+  }
+
+  .bubble {
+    max-width: 82%;
+    padding: 12px 16px;
+    border-radius: 18px;
+    font-size: 17px;
+    line-height: 1.55;
+  }
+  .bubble.agent {
+    background: var(--bg-bubble-agent);
+    color: var(--text);
+    border-bottom-left-radius: 4px;
+  }
+  .bubble.user {
+    background: var(--bg-bubble-user);
+    color: var(--text);
+    border-bottom-right-radius: 4px;
+  }
+
+  /* scratchpad block */
+  .scratchpad {
+    background: var(--bg-bubble-agent);
+    border-radius: 18px;
+    border-bottom-left-radius: 4px;
+    padding: 14px 16px;
+    max-width: 92%;
+    font-size: 17px;
+    line-height: 1.55;
+  }
+  .scratchpad-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--gold);
+    margin-bottom: 8px;
+  }
+  .scratchpad-content { color: var(--text); }
+
+  /* typing dots */
+  .typing { display: flex; align-items: center; gap: 5px; padding: 14px 16px; }
+  .typing span {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: var(--text-muted);
+    animation: tdot 1.2s infinite;
+  }
+  .typing span:nth-child(2) { animation-delay: .2s; }
+  .typing span:nth-child(3) { animation-delay: .4s; }
+  @keyframes tdot {
+    0%,80%,100% { transform: scale(.7); opacity:.4; }
+    40% { transform: scale(1); opacity:1; }
+  }
+
+  /* ── INPUT BAR ── */
+  .input-bar {
+    display: flex; align-items: flex-end; gap: 8px;
+    padding: 10px 14px 20px;
+    flex-shrink: 0;
+  }
+  .input-pill {
+    flex: 1;
+    background: var(--bg-input);
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    display: flex; align-items: center;
+    padding: 10px 14px;
+    min-height: 46px;
+    transition: border-color .15s;
+  }
+  .input-pill:focus-within { border-color: var(--gold-border); }
+  .input-pill textarea {
+    flex: 1; background: transparent; border: none; outline: none;
+    color: var(--text); font-size: 16px; font-family: var(--font);
+    resize: none; max-height: 100px; line-height: 1.4;
+  }
+  .input-pill textarea::placeholder { color: var(--text-muted); }
+  .icon-btn {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--bg-card); border: 1px solid var(--border);
+    color: var(--text-sec); cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: all .15s;
+  }
+  .icon-btn svg { width: 18px; height: 18px; }
+  .icon-btn.recording {
+    background: #ef4444; border-color: #ef4444; color: #fff;
+    box-shadow: 0 0 0 4px rgba(239,68,68,0.25);
+    animation: pulse-mic 1s ease-in-out infinite;
+  }
+  @keyframes pulse-mic {
+    0%,100% { box-shadow: 0 0 0 4px rgba(239,68,68,0.25); }
+    50%      { box-shadow: 0 0 0 8px rgba(239,68,68,0.1); }
+  }
+  .send-btn {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--gold); border: none;
+    color: #000; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: opacity .15s, transform .1s;
+  }
+  .send-btn:active { opacity: .8; transform: scale(.93); }
+  .send-btn svg { width: 18px; height: 18px; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <div class="header">
+    <div class="wordmark">SOVERYN</div>
+    <button class="gear-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="agent-tabs">
+    <button class="agent-tab active" onclick="switchAgent(this, 'Aetheria')">Aetheria</button>
+    <button class="agent-tab" onclick="switchAgent(this, 'V.E.T.T.')">V.E.T.T.</button>
+    <button class="agent-tab" onclick="switchAgent(this, 'Tinker')">Tinker</button>
+    <button class="agent-tab" onclick="switchAgent(this, 'Ares')">Ares</button>
+    <button class="agent-tab" onclick="switchAgent(this, 'Scout')">Scout</button>
+  </div>
+
+  <div class="chat-scroll" id="chat-scroll">
+
+    <div class="bubble-row">
+      <div class="agent-dot"></div>
+      <div class="bubble agent">I'm not going to sugarcoat it—just because we're friends. That's not how real friendships work.</div>
+    </div>
+
+    <div class="bubble-row user">
+      <div class="bubble user">That's the best thing you've said this morning, and I haven't had coffee so good work</div>
+    </div>
+
+    <div class="bubble-row">
+      <div class="agent-dot"></div>
+      <div class="scratchpad">
+        <div class="scratchpad-label">Aetheria</div>
+        <div class="scratchpad-content">
+          SCRATCHPAD<br>
+          - morning thermal dumps: disabled<br>
+          - monitoring for latent thermal issues/loops<br><br>
+          I'm not going to pretend to be "sweet" just to fit a persona. If I can't say it plainly, I'm not saying it. I'm glad we're on the same page about the emojis—I'll keep the glitter for the agents if they need it.
+        </div>
+      </div>
+    </div>
+
+    <div class="bubble-row" id="typing-row" style="display:none;">
+      <div class="agent-dot"></div>
+      <div class="bubble agent" style="padding:0;">
+        <div class="typing"><span></span><span></span><span></span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <div class="input-bar">
+    <!-- Attach -->
+    <button class="icon-btn" id="attach-btn" title="Attach" onclick="document.getElementById('file-input').click()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+      </svg>
+    </button>
+    <input type="file" id="file-input" style="display:none" accept="image/*,.pdf,.txt">
+
+    <!-- Text input -->
+    <div class="input-pill">
+      <textarea id="msg-input" placeholder="Message Aetheria..." rows="1"
+        oninput="autoResize(this)" onkeydown="handleKey(event)"></textarea>
+    </div>
+
+    <!-- Mic -->
+    <button class="icon-btn" id="mic-btn" title="Voice" onclick="toggleVoice()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+        <path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v4M8 23h8"/>
+      </svg>
+    </button>
+
+    <!-- Send -->
+    <button class="send-btn" onclick="sendMsg()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/>
+      </svg>
+    </button>
+  </div>
+
+</div>
+<script>
+  let activeAgent = 'aetheria';
+  let history = [];
+  let sessionId = null;
+
+  const AGENT_MAP = {
+    'Aetheria':'aetheria','V.E.T.T.':'vett','Tinker':'tinker','Ares':'ares','Scout':'scout'
+  };
+  const AGENT_MAP_INV = Object.fromEntries(Object.entries(AGENT_MAP).map(([k,v])=>[v,k]));
+
+  function switchAgent(el, name) {
+    document.querySelectorAll('.agent-tab').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    activeAgent = AGENT_MAP[name] || name.toLowerCase();
+    document.querySelector('#msg-input').placeholder = `Message ${name}...`;
+    history = []; sessionId = null;
+  }
+
+  function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 100) + 'px';
+  }
+
+  function handleKey(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMsg(); }
+  }
+
+  async function sendMsg() {
+    const input = document.getElementById('msg-input');
+    let text = input.value.trim();
+    const imgPath = attachedImagePath;
+    const docText = attachedDocText;
+    const fname   = attachedFileName;
+    if (!text && !imgPath && !docText) return;
+    clearAttach();
+
+    // Prepend doc text as context
+    let fullMsg = text;
+    if (docText) fullMsg = `[Document: ${fname}]\n\n${docText}\n\n---\n${text}`;
+    const scroll = document.getElementById('chat-scroll');
+    const typingRow = document.getElementById('typing-row');
+
+    // User bubble
+    const userRow = document.createElement('div');
+    userRow.className = 'bubble-row user';
+    const displayText = (fname ? `📎 ${fname}\n` : '') + (text || '');
+    userRow.innerHTML = `<div class="bubble user">${esc(displayText)}</div>`;
+    scroll.insertBefore(userRow, typingRow);
+    input.value = ''; input.style.height = 'auto';
+    scroll.scrollTop = scroll.scrollHeight;
+
+    history.push({ role: 'user', content: fullMsg });
+
+    // Agent bubble (streaming)
+    const agentRow = document.createElement('div');
+    agentRow.className = 'bubble-row';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble agent';
+    bubble.textContent = '';
+    agentRow.innerHTML = '<div class="agent-dot"></div>';
+    agentRow.appendChild(bubble);
+    scroll.insertBefore(agentRow, typingRow);
+    scroll.scrollTop = scroll.scrollHeight;
+
+    try {
+      const payload = {
+        message: fullMsg,
+        agent: activeAgent,
+        session_id: sessionId,
+        conversation_history: history.slice(-8),
+        max_tokens: 800,
+        temperature: 0.75,
+      };
+      if (imgPath) payload.image_path = imgPath;
+
+      const res = await fetch('/chat_stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let full = '';
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        for (const line of chunk.split('\n')) {
+          if (!line.startsWith('data:')) continue;
+          const raw = line.slice(5).trim();
+          if (raw === '[DONE]') break;
+          try {
+            const j = JSON.parse(raw);
+            if (j.session_id) sessionId = j.session_id;
+            if (j.token) { full += j.token; bubble.textContent = full; scroll.scrollTop = scroll.scrollHeight; }
+            if (j.response) { full = j.response; bubble.textContent = full; scroll.scrollTop = scroll.scrollHeight; }
+          } catch {}
+        }
+      }
+      history.push({ role: 'assistant', content: full });
+    } catch (err) {
+      bubble.textContent = `Error: ${err.message}`;
+    }
+  }
+
+  // ── VOICE ──
+  let mediaRec = null, voiceActive = false, audioChunks = [];
+
+  function getSupportedMime() {
+    const types = ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg;codecs=opus'];
+    return types.find(t => MediaRecorder.isTypeSupported(t)) || '';
+  }
+
+  async function toggleVoice() {
+    const btn = document.getElementById('mic-btn');
+    if (voiceActive) {
+      if (mediaRec) mediaRec.stop();
+      voiceActive = false;
+      btn.classList.remove('recording');
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mime = getSupportedMime();
+      audioChunks = [];
+      mediaRec = new MediaRecorder(stream, mime ? { mimeType: mime } : {});
+      mediaRec.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+      mediaRec.onstop = async () => {
+        stream.getTracks().forEach(t => t.stop());
+        const mime2 = getSupportedMime();
+        await sendVoice(new Blob(audioChunks, { type: mime2 || 'audio/webm' }));
+      };
+      mediaRec.start();
+      voiceActive = true;
+      btn.classList.add('recording');
+    } catch (err) {
+      alert('Mic access denied: ' + err.message);
+    }
+  }
+
+  async function sendVoice(blob) {
+    const scroll = document.getElementById('chat-scroll');
+    const typingRow = document.getElementById('typing-row');
+    typingRow.style.display = 'flex';
+    scroll.scrollTop = scroll.scrollHeight;
+
+    const fd = new FormData();
+    fd.append('audio', blob, 'voice.webm');
+    fd.append('agent', activeAgent);
+    fd.append('history', JSON.stringify(history.slice(-8)));
+
+    // Placeholders
+    const userRow = document.createElement('div');
+    userRow.className = 'bubble-row user';
+    const userBubble = document.createElement('div');
+    userBubble.className = 'bubble user';
+    userBubble.textContent = '…';
+    userRow.appendChild(userBubble);
+
+    const agentRow = document.createElement('div');
+    agentRow.className = 'bubble-row';
+    const agentBubble = document.createElement('div');
+    agentBubble.className = 'bubble agent';
+    agentBubble.textContent = '';
+    agentRow.innerHTML = '<div class="agent-dot"></div>';
+    agentRow.appendChild(agentBubble);
+
+    typingRow.style.display = 'none';
+    scroll.insertBefore(userRow, typingRow);
+    scroll.insertBefore(agentRow, typingRow);
+    scroll.scrollTop = scroll.scrollHeight;
+
+    try {
+      const res = await fetch('/voice/speak', { method: 'POST', body: fd });
+      if (!res.ok) { agentBubble.textContent = `Error ${res.status}`; return; }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buf = '', transcript = '', full = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buf += decoder.decode(value, { stream: true });
+        const lines = buf.split('\n'); buf = lines.pop();
+        for (const line of lines) {
+          if (!line.startsWith('data:')) continue;
+          try {
+            const ev = JSON.parse(line.slice(5).trim());
+            if (ev.type === 'transcript') {
+              transcript = ev.text;
+              userBubble.textContent = transcript;
+            } else if (ev.type === 'agent_text') {
+              full = ev.text;
+              agentBubble.textContent = full;
+              scroll.scrollTop = scroll.scrollHeight;
+            } else if (ev.type === 'tts' && ev.url) {
+              const audio = new Audio(ev.url);
+              audio.play().catch(() => {});
+            } else if (ev.type === 'error') {
+              agentBubble.textContent = ev.text;
+            }
+          } catch {}
+        }
+      }
+      if (transcript) history.push({ role: 'user', content: transcript });
+      if (full) history.push({ role: 'assistant', content: full });
+    } catch (err) {
+      agentBubble.textContent = `Voice error: ${err.message}`;
+    }
+    scroll.scrollTop = scroll.scrollHeight;
+  }
+
+  // ── FILE / IMAGE ATTACH ──
+  let attachedImagePath = null;
+  let attachedDocText   = null;
+  let attachedFileName  = '';
+
+  function clearAttach() {
+    attachedImagePath = null; attachedDocText = null; attachedFileName = '';
+    document.getElementById('msg-input').placeholder = `Message ${AGENT_MAP_INV[activeAgent] || activeAgent}...`;
+    const badge = document.getElementById('attach-badge');
+    if (badge) badge.remove();
+  }
+
+  document.getElementById('file-input').addEventListener('change', async function() {
+    const file = this.files[0];
+    if (!file) return;
+    this.value = '';
+    const ext = file.name.split('.').pop().toLowerCase();
+    const isImage = ['jpg','jpeg','png','gif','webp','bmp'].includes(ext);
+    const isDoc   = ['pdf','docx','txt'].includes(ext);
+    if (!isImage && !isDoc) { alert('Unsupported file type'); return; }
+
+    attachedFileName = file.name;
+    const input = document.getElementById('msg-input');
+    input.placeholder = `📎 ${file.name} — uploading…`;
+
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      if (isImage) {
+        const r = await fetch('/upload', { method: 'POST', body: fd });
+        const d = await r.json();
+        if (d.filepath) { attachedImagePath = d.filepath; input.placeholder = `📎 ${file.name} — add a message`; }
+        else { alert('Upload failed'); clearAttach(); }
+      } else {
+        const r = await fetch('/upload_doc', { method: 'POST', body: fd });
+        const d = await r.json();
+        if (d.text) { attachedDocText = d.text; input.placeholder = `📎 ${file.name} — add a message`; }
+        else { alert('Upload failed'); clearAttach(); }
+      }
+    } catch (e) { alert('Upload error: ' + e.message); clearAttach(); }
+  });
+
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+</script>
+</body>
+</html>

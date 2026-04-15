@@ -1,0 +1,1798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SOVERYN Intelligence</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-deep: #080808;
+            --bg-mid: #111111;
+            --bg-panel: #161616;
+            --bg-hover: #1e1e1e;
+            --border: rgba(255,255,255,0.07);
+            --border-accent: rgba(50, 140, 255, 0.35);
+            --accent: #3a8fff;
+            --accent-glow: rgba(50, 140, 255, 0.12);
+            --text: #e4e4e4;
+            --text-muted: #666666;
+            --text-dim: #404040;
+            --danger: #ff4757;
+            --success: #2ed573;
+            --font-ui: 'Syne', sans-serif;
+            --font-mono: 'JetBrains Mono', monospace;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: var(--font-ui);
+            background: var(--bg-deep);
+            color: var(--text);
+            height: 100vh;
+            overflow: hidden;
+            display: flex;
+        }
+
+        /* ── SIDEBAR ─────────────────────────────────────────── */
+        .sidebar {
+            width: 260px;
+            min-width: 260px;
+            background: var(--bg-panel);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.25s cubic-bezier(.4,0,.2,1), width 0.25s cubic-bezier(.4,0,.2,1);
+            overflow: hidden;
+            z-index: 200;
+        }
+
+        .sidebar.hidden {
+            transform: translateX(-260px);
+            width: 0;
+            min-width: 0;
+        }
+
+        .sidebar-header {
+            padding: 20px 16px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-mark {
+            width: 32px;
+            height: 32px;
+            background: var(--bg-hover);
+            border: 1px solid var(--border-accent);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+            box-shadow: 0 0 14px rgba(50,140,255,0.2);
+        }
+
+        .brand {
+            font-size: 15px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: #c8c8c8;
+        }
+
+        .sidebar-actions {
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .sidebar-btn {
+            padding: 9px 12px;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-muted);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-ui);
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.15s;
+            width: 100%;
+            text-align: left;
+        }
+
+        .sidebar-btn:hover {
+            background: var(--bg-hover);
+            border-color: var(--border-accent);
+            color: var(--text);
+        }
+
+        .sidebar-btn.primary {
+            background: var(--accent-glow);
+            border-color: var(--border-accent);
+            color: var(--accent);
+        }
+
+        .sidebar-btn.primary:hover {
+            background: rgba(80,160,255,0.2);
+        }
+
+        .sidebar-section {
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .section-label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: var(--text-dim);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            padding: 0 2px;
+        }
+
+        .select-control {
+            width: 100%;
+            padding: 9px 12px;
+            background: var(--bg-mid);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: var(--font-ui);
+            font-size: 13px;
+            cursor: pointer;
+            transition: border-color 0.15s;
+            appearance: none;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666680' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 10px center;
+        }
+
+        .select-control:focus {
+            outline: none;
+            border-color: var(--border-accent);
+        }
+
+        .select-control option, .select-control optgroup {
+            background: #1a1a2e;
+            color: var(--text);
+        }
+
+        .chat-history {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+
+        .chat-history::-webkit-scrollbar { width: 4px; }
+        .chat-history::-webkit-scrollbar-track { background: transparent; }
+        .chat-history::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        .chat-item {
+            padding: 9px 10px;
+            margin: 2px 0;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            border: 1px solid transparent;
+            transition: all 0.15s;
+        }
+
+        .chat-item:hover { background: var(--bg-hover); border-color: var(--border); }
+        .chat-item.active { background: var(--accent-glow); border-color: var(--border-accent); }
+
+        .chat-item-content { flex: 1; min-width: 0; }
+
+        .chat-item-title {
+            font-size: 12px;
+            font-weight: 600;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: var(--text);
+        }
+
+        .chat-item-preview {
+            font-size: 11px;
+            color: var(--text-muted);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            margin-top: 2px;
+        }
+
+        .chat-item-delete {
+            background: none;
+            border: none;
+            color: var(--text-dim);
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 4px;
+            font-size: 14px;
+            opacity: 0;
+            transition: all 0.15s;
+            flex-shrink: 0;
+        }
+
+        .chat-item:hover .chat-item-delete { opacity: 1; }
+        .chat-item-delete:hover { color: var(--danger); background: rgba(255,71,87,0.1); }
+
+        .sidebar-footer {
+            padding: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        /* ── MAIN AREA ───────────────────────────────────────── */
+        .main-area {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            position: relative;
+        }
+
+        .chat-header {
+            padding: 14px 20px;
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+        }
+
+        .menu-toggle {
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 7px 10px;
+            font-size: 16px;
+            transition: all 0.15s;
+            flex-shrink: 0;
+        }
+
+        .menu-toggle:hover {
+            background: var(--bg-hover);
+            color: var(--text);
+            border-color: var(--border-accent);
+        }
+
+        .header-agent-info {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .agent-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--success);
+            box-shadow: 0 0 6px var(--success);
+            animation: pulse 2s infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.4; }
+        }
+
+        .agent-name-header {
+            font-size: 14px;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .agent-model-tag {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: var(--text-muted);
+            background: var(--bg-mid);
+            border: 1px solid var(--border);
+            border-radius: 4px;
+            padding: 2px 6px;
+        }
+
+        /* ── MESSAGES ────────────────────────────────────────── */
+        .messages-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 24px 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .messages-container::-webkit-scrollbar { width: 4px; }
+        .messages-container::-webkit-scrollbar-track { background: transparent; }
+        .messages-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+        .message {
+            max-width: 78%;
+            padding: 12px 16px;
+            border-radius: 14px;
+            word-wrap: break-word;
+            line-height: 1.6;
+            font-size: 14px;
+        }
+
+        .message.user {
+            background: #1c1c1c;
+            border: 1px solid #2a2a2a;
+            margin-left: auto;
+            border-bottom-right-radius: 4px;
+        }
+
+        .message.agent {
+            background: #141414;
+            border: 1px solid #222222;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message-actions {
+            margin-top: 8px;
+            display: flex;
+            gap: 6px;
+        }
+
+        .message.user .message-actions { justify-content: flex-end; }
+
+        .action-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-dim);
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 5px;
+            font-size: 11px;
+            transition: all 0.15s;
+        }
+
+        .action-btn:hover {
+            background: var(--accent-glow);
+            border-color: var(--border-accent);
+            color: var(--accent);
+        }
+
+        /* ── INPUT AREA ──────────────────────────────────────── */
+        .input-area {
+            padding: 16px 20px;
+            background: var(--bg-panel);
+            border-top: 1px solid var(--border);
+            flex-shrink: 0;
+        }
+
+        .input-wrapper {
+            background: var(--bg-mid);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            transition: border-color 0.2s;
+            overflow: hidden;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--border-accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .input-toolbar {
+            display: flex;
+            align-items: center;
+            padding: 6px 8px 0;
+            gap: 2px;
+        }
+
+        .tool-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 5px 7px;
+            border-radius: 6px;
+            font-size: 15px;
+            transition: all 0.15s;
+            position: relative;
+        }
+
+        .tool-btn:hover {
+            background: var(--bg-hover);
+            color: var(--text);
+        }
+
+        .tool-btn.active {
+            color: var(--accent);
+            background: var(--accent-glow);
+        }
+
+        .tool-btn-label {
+            font-family: var(--font-ui);
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .input-row {
+            display: flex;
+            align-items: flex-end;
+            padding: 4px 8px 8px;
+            gap: 8px;
+        }
+
+        #messageInput {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--text);
+            font-family: var(--font-ui);
+            font-size: 14px;
+            resize: none;
+            min-height: 38px;
+            max-height: 140px;
+            padding: 8px 4px;
+            line-height: 1.5;
+        }
+
+        #messageInput:focus { outline: none; }
+        #messageInput::placeholder { color: var(--text-dim); }
+
+        .send-btn {
+            width: 36px;
+            height: 36px;
+            background: var(--accent);
+            border: none;
+            border-radius: 10px;
+            color: white;
+            cursor: pointer;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+            transition: all 0.15s;
+            box-shadow: 0 2px 10px rgba(50,140,255,0.25);
+        }
+
+        .send-btn:hover {
+            background: #5aa0ff;
+            box-shadow: 0 4px 14px rgba(50,140,255,0.35);
+        }
+
+        .send-btn:active { transform: translateY(0); }
+        .send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+        /* ── REASONING BOX ───────────────────────────────────── */
+        .reasoning-box {
+            background: rgba(50, 140, 255, 0.04);
+            border: 1px solid rgba(50, 140, 255, 0.15);
+            border-radius: 8px;
+            margin-bottom: 10px;
+            cursor: pointer;
+            overflow: hidden;
+            transition: all 0.2s ease;
+        }
+
+        .reasoning-box:hover {
+            border-color: rgba(50, 140, 255, 0.25);
+        }
+
+        .reasoning-header {
+            padding: 8px 12px;
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            color: rgba(50, 140, 255, 0.7);
+            user-select: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .reasoning-toggle {
+            transition: transform 0.2s;
+            display: inline-block;
+        }
+
+        .reasoning-box.expanded .reasoning-toggle {
+            transform: rotate(90deg);
+        }
+
+        .reasoning-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+            padding: 0 12px;
+            font-size: 12px;
+            font-family: var(--font-mono);
+            color: var(--text-muted);
+            line-height: 1.7;
+            white-space: pre-wrap;
+        }
+
+        .reasoning-box.expanded .reasoning-content {
+            max-height: 500px;
+            overflow-y: auto;
+            padding: 0 12px 12px;
+        }
+
+        /* ── LOADING ─────────────────────────────────────────── */
+        .thinking-indicator {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            padding: 10px 16px;
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            border-bottom-left-radius: 4px;
+            max-width: 120px;
+        }
+
+        .thinking-indicator.visible { display: flex; }
+
+        .thinking-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .thinking-dots span {
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: thinking 1.2s infinite;
+        }
+
+        .thinking-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .thinking-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes thinking {
+            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
+            30% { transform: translateY(-5px); opacity: 1; }
+        }
+
+        /* ── IMAGE PREVIEW ───────────────────────────────────── */
+        #imagePreviewBar {
+            display: none;
+            padding: 8px 16px;
+            background: var(--bg-mid);
+            border-top: 1px solid var(--border);
+            align-items: center;
+            gap: 10px;
+        }
+
+        #imagePreviewBar img {
+            width: 48px;
+            height: 48px;
+            object-fit: cover;
+            border-radius: 6px;
+        }
+
+        .clear-image-btn {
+            background: rgba(255,71,87,0.1);
+            border: 1px solid rgba(255,71,87,0.3);
+            color: var(--danger);
+            border-radius: 6px;
+            padding: 4px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            font-family: var(--font-ui);
+        }
+
+        /* ── MODAL ───────────────────────────────────────────── */
+        .modal {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.8);
+            backdrop-filter: blur(8px);
+            z-index: 9999;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal.active { display: flex; }
+
+        .modal-box {
+            background: var(--bg-panel);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            width: 90%;
+            max-width: 520px;
+            max-height: 88vh;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.6);
+        }
+
+        .modal-head {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-head h2 {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 22px;
+            cursor: pointer;
+            line-height: 1;
+            transition: color 0.15s;
+        }
+
+        .modal-close:hover { color: var(--danger); }
+
+        .modal-body {
+            padding: 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        .setting-group { margin-bottom: 20px; }
+        
+        .setting-label {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 6px;
+            display: block;
+        }
+
+        .setting-hint {
+            font-size: 11px;
+            color: var(--text-dim);
+            margin-bottom: 8px;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            border-radius: 2px;
+            background: var(--bg-hover);
+            appearance: none;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            appearance: none;
+            width: 14px;
+            height: 14px;
+            border-radius: 50%;
+            background: var(--accent);
+            box-shadow: 0 0 6px rgba(80,160,255,0.4);
+        }
+
+        .range-value {
+            text-align: center;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            color: var(--accent);
+            margin-top: 6px;
+        }
+
+        .tab-bar {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            background: var(--bg-mid);
+            padding: 4px;
+            border-radius: 10px;
+        }
+
+        .tab-btn {
+            flex: 1;
+            padding: 8px;
+            background: transparent;
+            border: none;
+            border-radius: 7px;
+            color: var(--text-muted);
+            font-family: var(--font-ui);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .tab-btn.active {
+            background: var(--bg-panel);
+            color: var(--text);
+            box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        }
+
+        /* ── MEMORY LIST ─────────────────────────────────────── */
+        .memory-item {
+            background: var(--bg-mid);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 12px;
+            margin-bottom: 8px;
+        }
+
+        .memory-meta {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .memory-text {
+            font-size: 13px;
+            color: var(--text);
+            line-height: 1.5;
+            white-space: pre-wrap;
+        }
+
+        .memory-actions {
+            display: flex;
+            gap: 6px;
+            margin-top: 10px;
+        }
+
+        .mem-btn {
+            padding: 4px 10px;
+            border-radius: 5px;
+            font-size: 11px;
+            font-family: var(--font-ui);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .mem-btn.pin { background: rgba(50,140,255,0.1); border: 1px solid rgba(50,140,255,0.3); color: var(--accent); }
+        .mem-btn.edit { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: var(--text-muted); }
+        .mem-btn.del { background: rgba(255,71,87,0.1); border: 1px solid rgba(255,71,87,0.3); color: var(--danger); }
+
+        .danger-btn {
+            width: 100%;
+            padding: 10px;
+            background: rgba(255,71,87,0.1);
+            border: 1px solid rgba(255,71,87,0.3);
+            border-radius: 8px;
+            color: var(--danger);
+            font-family: var(--font-ui);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 12px;
+            transition: all 0.15s;
+        }
+
+        .danger-btn:hover { background: rgba(255,71,87,0.2); }
+
+        /* ── WEBCAM ──────────────────────────────────────────── */
+        #webcamContainer {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 560px;
+            max-width: 92%;
+            background: var(--bg-panel);
+            border: 1px solid var(--border-accent);
+            border-radius: 16px;
+            padding: 20px;
+            box-shadow: 0 24px 64px rgba(0,0,0,0.7);
+            z-index: 2000;
+        }
+
+        #webcamVideo {
+            width: 100%;
+            border-radius: 10px;
+            background: #000;
+            margin-bottom: 12px;
+        }
+
+        .webcam-controls { display: flex; gap: 8px; margin-bottom: 10px; }
+
+        .webcam-btn {
+            flex: 1;
+            padding: 9px;
+            background: var(--accent-glow);
+            border: 1px solid var(--border-accent);
+            border-radius: 8px;
+            color: var(--accent);
+            font-family: var(--font-ui);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+
+        .webcam-btn:hover { background: rgba(80,160,255,0.2); }
+
+        #visionPrompt {
+            width: 100%;
+            padding: 10px 12px;
+            background: var(--bg-mid);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: var(--font-ui);
+            font-size: 13px;
+            margin-bottom: 10px;
+        }
+
+        #visionPrompt:focus { outline: none; border-color: var(--border-accent); }
+
+        /* ── CONFERENCE MODAL ────────────────────────────────── */
+        .conf-modal-box {
+            max-width: 800px;
+        }
+
+        /* ── IMAGE GEN MODAL ─────────────────────────────────── */
+        textarea.modal-textarea {
+            width: 100%;
+            padding: 12px;
+            background: var(--bg-mid);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-family: var(--font-ui);
+            font-size: 13px;
+            min-height: 90px;
+            resize: vertical;
+            margin-bottom: 12px;
+        }
+
+        textarea.modal-textarea:focus { outline: none; border-color: var(--border-accent); }
+
+        .primary-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-family: var(--font-ui);
+            font-size: 14px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: opacity 0.15s;
+        }
+
+        .primary-btn:hover { opacity: 0.9; }
+
+        /* ── SPEAK BUTTON ────────────────────────────────────── */
+        #speakBtn {
+            position: fixed;
+            bottom: 90px;
+            right: 24px;
+            background: var(--accent-glow);
+            border: 1px solid var(--border-accent);
+            color: var(--accent);
+            padding: 10px 20px;
+            border-radius: 20px;
+            font-family: var(--font-ui);
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            z-index: 1000;
+            user-select: none;
+            display: none;
+        }
+
+        /* ── MOBILE OVERLAY BACKDROP ─────────────────────────── */
+        .sidebar-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 250;
+        }
+
+        .sidebar-backdrop.visible { display: block; }
+
+        /* ── RESPONSIVE ──────────────────────────────────────── */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                top: 0;
+                left: 0;
+                height: 100vh;
+                z-index: 300;
+                transform: translateX(-260px);
+            }
+
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .menu-toggle {
+                position: fixed;
+                top: 14px;
+                left: 14px;
+                z-index: 400;
+                background: var(--bg-panel);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                color: var(--text-muted);
+                cursor: pointer;
+                padding: 8px 11px;
+                font-size: 16px;
+            }
+
+            .chat-header {
+                padding-left: 60px;
+            }
+
+            .messages-container {
+                padding: 16px 12px;
+            }
+
+            .message {
+                max-width: 92%;
+            }
+
+            .input-area {
+                padding: 12px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<!-- MOBILE BACKDROP -->
+<div class="sidebar-backdrop" id="sidebarBackdrop" onclick="closeSidebar()"></div>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <img src="/static/SOVERYNnobackgroundlogo.png" style="width:120px; height:auto; object-fit:contain; filter:drop-shadow(0 0 10px rgba(50,140,255,0.7)) drop-shadow(0 0 20px rgba(50,140,255,0.35));">
+    </div>
+
+    <div class="sidebar-actions">
+        <button class="sidebar-btn primary" onclick="createNewChat()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+            New Chat
+        </button>
+        <button class="sidebar-btn" onclick="openConference()">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Agent Conference
+        </button>
+    </div>
+
+    <div class="sidebar-section">
+        <div class="section-label">Active Agent</div>
+        <select class="select-control" id="agentSelector" onchange="switchAgent()">
+            <option value="aetheria">Aetheria</option>
+            <option value="vett" disabled>V.E.T.T. — Coming Soon</option>
+            <option value="tinker" disabled>Tinker — Coming Soon</option>
+            <option value="ares" disabled>Ares — Coming Soon</option>
+        </select>
+    </div>
+
+    <div class="sidebar-section">
+        <div class="section-label">Model Override</div>
+        <select class="select-control" id="modelSelector" onchange="switchModel()">
+            <option value="">Agent Default</option>
+            <optgroup label="── 70B Models ──">
+                <option value="Hermes-3-Llama-3.1-70B-IQ4_XS.gguf">Hermes-3 Llama 70B</option>
+                <option value="L3.3-Cirrus-70B-Q4_K_M.gguf">L3.3 Cirrus 70B</option>
+                <option value="dolphin-2.9.1-llama-3-70b.IQ4_XS.gguf">Dolphin 2.9.1 70B</option>
+                <option value="magnum-v4-72b-IQ4_XS.gguf">Magnum v4 72B</option>
+                <option value="Midnight-Miqu-70B-v1.5.IQ4_XS.gguf">Midnight Miqu 70B</option>
+                <option value="Midnight-Rose-70B-v2.0.3.i1-IQ4_XS.gguf">Midnight Rose 70B</option>
+                <option value="Qwen2-VL-72B-Instruct-abliterated.Q3_K_L.gguf">Qwen2-VL 72B Vision</option>
+                <option value="Qwen2.5-VL-72B-Instruct.IQ4_XS.gguf">Qwen2.5-VL 72B Vision</option>
+            </optgroup>
+            <optgroup label="── 27B Models ──">
+                <option value="Gemma-3-27b-it-Uncensored-HERETIC-Gemini-Deep-Reasoning.Q8_0.gguf">Gemma 3 27B Vision Q8</option>
+                <option value="google_gemma-3-27b-it-Q4_1.gguf">Gemma 3 27B Q4</option>
+            </optgroup>
+            <optgroup label="── 32B Models ──">
+                <option value="Qwen2.5-32B-Instruct-Q4_K_M.gguf">Qwen2.5 32B</option>
+            </optgroup>
+            <optgroup label="── 7B Models ──">
+                <option value="Qwen2-VL-7B-Instruct-Q4_K_M.gguf">Qwen2-VL 7B Vision</option>
+                <option value="Qwen2.5-7B-Instruct-f16.gguf">Qwen2.5 7B F16</option>
+                <option value="Qwen2.5-7B-Instruct-Uncensored_Q4_K_M.gguf">Qwen2.5 7B Uncensored</option>
+            </optgroup>
+        </select>
+    </div>
+
+    <div class="chat-history" id="chatHistory"></div>
+
+    <div class="sidebar-footer">
+        <button class="sidebar-btn" onclick="openSettings()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+            Settings
+        </button>
+    </div>
+</div>
+
+<!-- MAIN AREA -->
+<div class="main-area">
+    <div class="chat-header">
+        <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
+        <div class="header-agent-info">
+            <div class="agent-dot"></div>
+            <span class="agent-name-header" id="headerAgentName">Aetheria</span>
+            <span class="agent-model-tag" id="headerModelTag">Gemma 3 27B</span>
+        </div>
+    </div>
+
+    <div class="messages-container" id="messagesContainer"></div>
+
+    <div id="imagePreviewBar">
+        <img id="imagePreviewThumb" src="" alt="preview">
+        <span style="font-size:12px; color:var(--text-muted); flex:1;">Image ready to send</span>
+        <button class="clear-image-btn" onclick="clearImage()">✕ Remove</button>
+    </div>
+
+    <div class="input-area">
+        <div class="input-wrapper">
+            <div class="input-toolbar">
+                <button class="tool-btn" onclick="triggerImageUpload()" title="Upload Image">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                </button>
+                <button class="tool-btn" onclick="toggleWebcam()" title="Live Camera">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                </button>
+                <button class="tool-btn" id="voiceInBtn" onclick="toggleVoiceIn()" title="Voice Input">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
+                </button>
+                <button class="tool-btn" id="voiceOutBtn" onclick="toggleVoiceOut()" title="Voice Output">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/></svg>
+                </button>
+                <button class="tool-btn" onclick="openImageGen()" title="Generate Image">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+                </button>
+            </div>
+            <div class="input-row">
+                <textarea id="messageInput" placeholder="Message Aetheria..." onkeydown="handleKeyPress(event)" rows="1" oninput="autoResize(this)"></textarea>
+                <button class="send-btn" id="sendBtn" onclick="sendMessage()">↑</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Hidden file input -->
+<input type="file" id="imageInput" accept="image/*" style="display:none" onchange="handleImageUpload(event)">
+
+<!-- THINKING INDICATOR (injected into messages) -->
+
+<!-- SETTINGS MODAL -->
+<div class="modal" id="settingsModal">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h2>Settings</h2>
+            <button class="modal-close" onclick="closeSettings()">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="tab-bar">
+                <button class="tab-btn active" id="tabGeneral" onclick="showTab('general')">General</button>
+                <button class="tab-btn" id="tabMemory" onclick="showTab('memory')">Memory</button>
+            </div>
+
+            <div id="settingsGeneral">
+                <div class="setting-group">
+                    <label class="setting-label">Temperature</label>
+                    <div class="setting-hint">Higher = more creative. Lower = more focused.</div>
+                    <input type="range" id="tempSlider" min="0" max="20" value="7" oninput="updateTemp(this.value)">
+                    <div class="range-value"><span id="tempVal">0.7</span></div>
+                </div>
+                <div class="setting-group">
+                    <label class="setting-label">Repetition Penalty</label>
+                    <div class="setting-hint">Higher = avoids repeating phrases.</div>
+                    <input type="range" id="repSlider" min="10" max="15" value="11" oninput="updateRep(this.value)">
+                    <div class="range-value"><span id="repVal">1.1</span></div>
+                </div>
+                <div class="setting-group">
+                    <label class="setting-label">Max Response Length</label>
+                    <input type="range" id="tokenSlider" min="100" max="4000" value="800" step="100" oninput="updateTokens(this.value)">
+                    <div class="range-value"><span id="tokenVal">800</span> tokens</div>
+                </div>
+            </div>
+
+            <div id="settingsMemory" style="display:none">
+                <div class="setting-group">
+                    <label class="setting-label">Agent</label>
+                    <select class="select-control" id="memoryAgentSelector" onchange="loadMemories()">
+                        <option value="aetheria">Aetheria</option>
+                        <option value="vett">V.E.T.T.</option>
+                        <option value="tinker">Tinker</option>
+                        <option value="ares">Ares</option>
+                    </select>
+                </div>
+                <div class="setting-group">
+                    <input type="text" id="memorySearch" placeholder="Search memories..." oninput="filterMemories()"
+                        style="width:100%; padding:9px 12px; background:var(--bg-mid); border:1px solid var(--border); border-radius:8px; color:var(--text); font-family:var(--font-ui); font-size:13px;">
+                </div>
+                <div style="font-size:12px; color:var(--text-muted); margin-bottom:10px;"><span id="memoryCount">0</span> memories</div>
+                <div id="memoriesList" style="max-height:320px; overflow-y:auto;"></div>
+                <button class="danger-btn" onclick="clearAllMemories()">Clear All Memories</button>
+                <button class="danger-btn" style="margin-top:6px; background:rgba(241,196,15,0.1); border-color:rgba(241,196,15,0.3); color:#f1c40f;" onclick="pruneMemories()">🧹 Prune Old Memories</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CONFERENCE MODAL -->
+<div class="modal" id="conferenceModal">
+    <div class="modal-box conf-modal-box">
+        <div class="modal-head">
+            <h2>👥 Agent Conference</h2>
+            <button class="modal-close" onclick="closeConference()">×</button>
+        </div>
+        <div class="modal-body">
+            <div class="setting-group">
+                <label class="setting-label">Discussion Topic</label>
+                <textarea class="modal-textarea" id="conferenceTopic" placeholder="What should the agents discuss?"></textarea>
+            </div>
+            <div class="setting-group">
+                <label class="setting-label">Rounds: <span id="roundsVal">5</span></label>
+                <input type="range" id="conferenceRounds" min="3" max="10" value="5" oninput="document.getElementById('roundsVal').textContent=this.value">
+            </div>
+            <button class="primary-btn" onclick="startConference()">🎙️ Start Discussion</button>
+            <div id="conferenceLoading" style="display:none; text-align:center; padding:30px; color:var(--text-muted);">Agents discussing...</div>
+            <div id="conferenceChat" style="display:none; margin-top:16px; max-height:400px; overflow-y:auto;"></div>
+        </div>
+    </div>
+</div>
+
+<!-- IMAGE GEN MODAL -->
+<div class="modal" id="imageGenModal">
+    <div class="modal-box">
+        <div class="modal-head">
+            <h2>🎨 Generate Image</h2>
+            <button class="modal-close" onclick="closeImageGen()">×</button>
+        </div>
+        <div class="modal-body">
+            <label class="setting-label">Prompt</label>
+            <textarea class="modal-textarea" id="imagePrompt" placeholder="Describe the image..."></textarea>
+            <button class="primary-btn" onclick="generateImage()">Generate</button>
+        </div>
+    </div>
+</div>
+
+<!-- WEBCAM -->
+<div id="webcamContainer">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+        <h3 style="font-size:15px; font-weight:700;">📹 Live Camera</h3>
+        <button onclick="toggleWebcam()" style="background:rgba(255,71,87,0.1); border:1px solid rgba(255,71,87,0.3); border-radius:6px; color:var(--danger); cursor:pointer; padding:5px 10px; font-size:12px;">✕ Close</button>
+    </div>
+    <video id="webcamVideo" autoplay playsinline muted></video>
+    <input type="text" id="visionPrompt" placeholder="Ask about what you're showing..." onkeydown="if(event.key==='Enter') captureAndAsk()">
+    <div class="webcam-controls">
+        <button class="webcam-btn" onclick="captureAndAsk()">👁️ What do you see?</button>
+        <button class="webcam-btn" id="continuousVisionBtn" onclick="toggleContinuousVision()">▶️ Continuous</button>
+    </div>
+    <div id="visionLoadingIndicator" style="display:none; color:var(--text-muted); font-size:12px; text-align:center;">🔄 Analyzing...</div>
+</div>
+
+<script src="/static/webcam.js"></script>
+<script>
+// ── STATE ────────────────────────────────────────────────────
+let currentAgent = 'aetheria';
+let currentChatId = null;
+let conversations = JSON.parse(localStorage.getItem('soveryn_conversations')) || {};
+let currentModel = '';
+let webSearchEnabled = false;
+let voiceOutEnabled = false;
+let voiceInEnabled = false;
+let currentImagePath = null;
+let temperature = 0.7;
+let repeatPenalty = 1.1;
+let maxTokens = 800;
+let allMemories = [];
+
+// MediaRecorder state
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+
+// ── INIT ─────────────────────────────────────────────────────
+renderChatHistory();
+if (Object.keys(conversations).length === 0) {
+    createNewChat();
+} else {
+    const lastId = Object.keys(conversations).sort((a, b) =>
+        new Date(conversations[b].updated) - new Date(conversations[a].updated)
+    )[0];
+    loadChat(lastId);
+}
+
+// ── SIDEBAR ──────────────────────────────────────────────────
+const isMobile = () => window.innerWidth <= 768;
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    if (isMobile()) {
+        const open = sidebar.classList.toggle('open');
+        document.getElementById('sidebarBackdrop').classList.toggle('visible', open);
+    } else {
+        sidebar.classList.toggle('hidden');
+    }
+}
+
+function closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    sidebar.classList.remove('open');
+    document.getElementById('sidebarBackdrop').classList.remove('visible');
+}
+
+// Close sidebar on mobile when loading a chat
+function loadChatMobile(id) {
+    if (isMobile()) closeSidebar();
+    loadChat(id);
+}
+
+// On init, close sidebar on mobile
+if (isMobile()) {
+    document.getElementById('sidebar').classList.remove('open');
+}
+
+// ── CHAT MANAGEMENT ──────────────────────────────────────────
+function createNewChat() {
+    const id = Date.now().toString();
+    conversations[id] = {
+        id, title: 'New Chat', messages: [],
+        agent: currentAgent,
+        created: new Date().toISOString(),
+        updated: new Date().toISOString()
+    };
+    saveConversations();
+    loadChat(id);
+    renderChatHistory();
+}
+
+function loadChat(chatId) {
+    currentChatId = chatId;
+    const chat = conversations[chatId];
+    if (!chat) return;
+    currentAgent = chat.agent || 'aetheria';
+    document.getElementById('agentSelector').value = currentAgent;
+    document.getElementById('headerAgentName').textContent = currentAgent.charAt(0).toUpperCase() + currentAgent.slice(1);
+
+    const container = document.getElementById('messagesContainer');
+    container.innerHTML = '';
+    chat.messages.forEach(m => addMessageToUI(m.role, m.content));
+    renderChatHistory();
+    container.scrollTop = container.scrollHeight;
+}
+
+function deleteChat(chatId) {
+    if (!confirm('Delete this conversation?')) return;
+    delete conversations[chatId];
+    saveConversations();
+    const remaining = Object.keys(conversations);
+    if (remaining.length > 0) loadChat(remaining[0]);
+    else createNewChat();
+    renderChatHistory();
+}
+
+function saveConversations() {
+    localStorage.setItem('soveryn_conversations', JSON.stringify(conversations));
+}
+
+function renderChatHistory() {
+    const container = document.getElementById('chatHistory');
+    container.innerHTML = '';
+    Object.values(conversations)
+        .sort((a, b) => new Date(b.updated) - new Date(a.updated))
+        .forEach(chat => {
+            const last = chat.messages.slice(-1)[0];
+            const preview = last?.content?.substring(0, 45) + '...' || 'Empty chat';
+            const item = document.createElement('div');
+            item.className = 'chat-item' + (chat.id === currentChatId ? ' active' : '');
+            item.innerHTML = `
+                <div class="chat-item-content" onclick="loadChat('${chat.id}')">
+                    <div class="chat-item-title">${chat.title}</div>
+                    <div class="chat-item-preview">${preview}</div>
+                </div>
+                <button class="chat-item-delete" onclick="deleteChat('${chat.id}'); event.stopPropagation();">×</button>
+            `;
+            container.appendChild(item);
+        });
+}
+
+function switchAgent() {
+    currentAgent = document.getElementById('agentSelector').value;
+    document.getElementById('headerAgentName').textContent = currentAgent.charAt(0).toUpperCase() + currentAgent.slice(1);
+    if (currentChatId && conversations[currentChatId]) {
+        conversations[currentChatId].agent = currentAgent;
+        saveConversations();
+    }
+}
+
+function switchModel() {
+    currentModel = document.getElementById('modelSelector').value;
+    const tag = document.getElementById('headerModelTag');
+    const sel = document.getElementById('modelSelector');
+    tag.textContent = currentModel
+        ? sel.options[sel.selectedIndex].text
+        : 'Agent Default';
+}
+
+// ── SEND MESSAGE ─────────────────────────────────────────────
+async function sendMessage() {
+    const input = document.getElementById('messageInput');
+    const message = input.value.trim();
+    if (!message) return;
+
+    input.value = '';
+    autoResize(input);
+    addMessageToUI('user', message);
+    showThinking();
+
+    const sendBtn = document.getElementById('sendBtn');
+    sendBtn.disabled = true;
+
+    if (!currentChatId) createNewChat();
+
+    try {
+        const res = await fetch('/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                agent: currentAgent,
+                message,
+                conversation_history: getRecentHistory(3),
+                image_path: currentImagePath,
+                web_search_enabled: webSearchEnabled,
+                model_override: currentModel || null,
+                temperature,
+                repeat_penalty: repeatPenalty,
+                max_tokens: maxTokens
+            })
+        });
+
+        currentImagePath = null;
+        document.getElementById('imagePreviewBar').style.display = 'none';
+
+        const data = await res.json();
+        hideThinking();
+        sendBtn.disabled = false;
+
+        if (!data.response) {
+            addMessageToUI('agent', data.error ? `Error: ${data.error}` : 'Error: No response received');
+            return;
+        }
+
+        const imageRegex = /\[IMAGE:\s*([^\]]+)\]/g;
+        const imageMatches = [...data.response.matchAll(imageRegex)];
+
+        if (imageMatches.length > 0) {
+            addMessageToUI('agent', data.response.replace(imageRegex, '🎨 Generating...'));
+            for (const match of imageMatches) await generateAgentImage(match[1].trim());
+        } else {
+            addMessageToUI('agent', data.response);
+        }
+
+        if (voiceOutEnabled && data.response) generateSpeech(data.response);
+
+        if (currentChatId && conversations[currentChatId]) {
+            if (conversations[currentChatId].title === 'New Chat') {
+                conversations[currentChatId].title = message.length > 32
+                    ? message.substring(0, 32) + '...' : message;
+            }
+            conversations[currentChatId].messages.push(
+                { role: 'user', content: message },
+                { role: 'agent', content: data.response }
+            );
+            conversations[currentChatId].updated = new Date().toISOString();
+            saveConversations();
+            renderChatHistory();
+        }
+    } catch (err) {
+        hideThinking();
+        sendBtn.disabled = false;
+        addMessageToUI('agent', 'Error: ' + err.message);
+    }
+}
+
+function getRecentHistory(n) {
+    if (!currentChatId || !conversations[currentChatId]) return [];
+    return conversations[currentChatId].messages
+        .slice(-n)
+        .filter(m => m.content && m.content.length < 10000 && !m.content.includes('testUSER:'))
+        .map(m => ({ role: m.role, content: m.content }));
+}
+
+function addMessageToUI(role, content) {
+    const container = document.getElementById('messagesContainer');
+    const div = document.createElement('div');
+    div.className = `message ${role}`;
+
+    let thinkingHtml = '';
+    let mainContent = content;
+
+    if (role === 'agent') {
+        // Extract <think>...</think> blocks
+        const thinkMatch = content.match(/<think>([\s\S]*?)<\/think>/i);
+        if (thinkMatch) {
+            const thinkText = thinkMatch[1].trim();
+            mainContent = content.replace(/<think>[\s\S]*?<\/think>/i, '').trim();
+            thinkingHtml = `
+                <div class="reasoning-box" onclick="this.classList.toggle('expanded')">
+                    <div class="reasoning-header">
+                        <span class="reasoning-toggle">▸</span> Reasoning
+                    </div>
+                    <div class="reasoning-content">${thinkText}</div>
+                </div>`;
+        }
+        // Also catch freeform thinking patterns (lines starting with ** or "Confirming" etc)
+        // Strip common internal monologue patterns
+        mainContent = mainContent.replace(/\*\*[^*]+\*\*\s*\n?/g, '').trim();
+        mainContent = mainContent.replace(/^(Confirming|Analyzing|Processing|I need to|Let me think|I'm going to)[^\n]*\n/gm, '').trim();
+    }
+
+    div.innerHTML = `
+        ${thinkingHtml}
+        <div class="message-text">${mainContent}</div>
+        <div class="message-actions">
+            <button class="action-btn" onclick="copyMessage(this)">Copy</button>
+            ${role === 'agent' ? '<button class="action-btn" onclick="regenerateMessage()">Retry</button>' : ''}
+        </div>
+    `;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+
+function showThinking() {
+    const container = document.getElementById('messagesContainer');
+    const div = document.createElement('div');
+    div.id = 'thinkingIndicator';
+    div.className = 'thinking-indicator visible';
+    div.innerHTML = `<div class="thinking-dots"><span></span><span></span><span></span></div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+}
+
+function hideThinking() {
+    const el = document.getElementById('thinkingIndicator');
+    if (el) el.remove();
+}
+
+function handleKeyPress(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+    }
+}
+
+function autoResize(el) {
+    el.style.height = 'auto';
+    el.style.height = Math.min(el.scrollHeight, 140) + 'px';
+}
+
+function copyMessage(btn) {
+    const text = btn.closest('.message').querySelector('.message-text').textContent;
+    navigator.clipboard.writeText(text);
+}
+
+function regenerateMessage() {
+    if (!currentChatId || !conversations[currentChatId].messages.length) return;
+    const msgs = conversations[currentChatId].messages;
+    msgs.pop();
+    const last = msgs[msgs.length - 1];
+    if (last?.role === 'user') {
+        const container = document.getElementById('messagesContainer');
+        container.removeChild(container.lastChild);
+        document.getElementById('messageInput').value = last.content;
+        sendMessage();
+    }
+}
+
+// ── TOOL BUTTONS ─────────────────────────────────────────────
+function triggerImageUpload() {
+    document.getElementById('imageInput').click();
+}
+
+async function handleImageUpload(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+        const res = await fetch('/upload', { method: 'POST', body: formData });
+        const data = await res.json();
+        if (data.filepath) {
+            currentImagePath = data.filepath;
+            const bar = document.getElementById('imagePreviewBar');
+            document.getElementById('imagePreviewThumb').src = URL.createObjectURL(file);
+            bar.style.display = 'flex';
+        }
+    } catch (err) { alert('Upload error: ' + err.message); }
+}
+
+function clearImage() {
+    currentImagePath = null;
+    document.getElementById('imagePreviewBar').style.display = 'none';
+    document.getElementById('imageInput').value = '';
+}
+
+function toggleVoiceOut() {
+    voiceOutEnabled = !voiceOutEnabled;
+    document.getElementById('voiceOutBtn').classList.toggle('active', voiceOutEnabled);
+}
+
+async function generateSpeech(text) {
+    try {
+        const res = await fetch('/tts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ text, agent: currentAgent, voice_accent: 50, speed: 1.3 })
+        });
+        const data = await res.json();
+        if (data.audio_url) new Audio(data.audio_url + '?t=' + Date.now()).play();
+    } catch (err) { console.error('TTS error:', err); }
+}
+
+// ── VOICE IN ─────────────────────────────────────────────────
+function toggleVoiceIn() {
+    voiceInEnabled = !voiceInEnabled;
+    document.getElementById('voiceInBtn').classList.toggle('active', voiceInEnabled);
+    const btn = document.getElementById('speakBtn');
+    if (voiceInEnabled) {
+        btn.style.display = 'block';
+        btn.addEventListener('mousedown', startRecording);
+        btn.addEventListener('mouseup', stopAndSend);
+        btn.addEventListener('touchstart', startRecording);
+        btn.addEventListener('touchend', stopAndSend);
+    } else {
+        btn.style.display = 'none';
+        stopRecording();
+    }
+}
+
+async function startRecording(e) {
+    e.preventDefault();
+    if (isRecording) return;
+    try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        audioChunks = [];
+        mediaRecorder = new MediaRecorder(stream);
+        mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+        mediaRecorder.start();
+        isRecording = true;
+        const btn = document.getElementById('speakBtn');
+        btn.textContent = '🔴 Recording...';
+        btn.style.background = 'rgba(255,71,87,0.15)';
+        btn.style.borderColor = 'rgba(255,71,87,0.4)';
+        btn.style.color = 'var(--danger)';
+    } catch { alert('Microphone access denied.'); }
+}
+
+async function stopAndSend(e) {
+    e.preventDefault();
+    if (!isRecording || !mediaRecorder) return;
+    return new Promise(resolve => {
+        mediaRecorder.onstop = async () => {
+            isRecording = false;
+            mediaRecorder.stream.getTracks().forEach(t => t.stop());
+            const btn = document.getElementById('speakBtn');
+            btn.textContent = '⏳ Processing...';
+            const blob = new Blob(audioChunks, { type: 'audio/webm' });
+            const form = new FormData();
+            form.append('audio', blob, 'recording.webm');
+            form.append('agent', currentAgent);
+            form.append('conversation_history', JSON.stringify(getRecentHistory(3)));
+            try {
+                const res = await fetch('/speak', { method: 'POST', body: form });
+                const data = await res.json();
+                if (data.transcript) addMessageToUI('user', data.transcript);
+                if (data.response) addMessageToUI('agent', data.response);
+                if (data.audio_url) new Audio(data.audio_url).play().catch(() => {});
+            } catch (err) { console.error('Speak error:', err); }
+            btn.textContent = '🎤 Hold to Speak';
+            btn.style.background = 'var(--accent-glow)';
+            btn.style.borderColor = 'var(--border-accent)';
+            btn.style.color = 'var(--accent)';
+            resolve();
+        };
+        mediaRecorder.stop();
+    });
+}
+
+function stopRecording() {
+    if (mediaRecorder && isRecording) { mediaRecorder.stop(); isRecording = false; }
+}
+
+// ── SETTINGS ─────────────────────────────────────────────────
+function openSettings() {
+    document.getElementById('settingsModal').classList.add('active');
+    document.getElementById('tempSlider').value = temperature * 10;
+    document.getElementById('tempVal').textContent = temperature.toFixed(1);
+}
+function closeSettings() { document.getElementById('settingsModal').classList.remove('active'); }
+function updateTemp(v) { temperature = v / 10; document.getElementById('tempVal').textContent = temperature.toFixed(1); }
+function updateRep(v) { repeatPenalty = v / 10; document.getElementById('repVal').textContent = repeatPenalty.toFixed(1); }
+function updateTokens(v) { maxTokens = parseInt(v); document.getElementById('tokenVal').textContent = maxTokens; }
+
+function showTab(tab) {
+    document.getElementById('settingsGeneral').style.display = tab === 'general' ? 'block' : 'none';
+    document.getElementById('settingsMemory').style.display = tab === 'memory' ? 'block' : 'none';
+    document.getElementById('tabGeneral').classList.toggle('active', tab === 'general');
+    document.getElementById('tabMemory').classList.toggle('active', tab === 'memory');
+    if (tab === 'memory') loadMemories();
+}
+
+// ── MEMORY ───────────────────────────────────────────────────
+async function loadMemories() {
+    const agent = document.getElementById('memoryAgentSelector').value;
+    try {
+        const res = await fetch(`/memory/list/${agent}`);
+        const data = await res.json();
+        allMemories = data.memories || [];
+        displayMemories(allMemories);
+        document.getElementById('memoryCount').textContent = allMemories.length;
+    } catch (err) { console.error(err); }
+}
+
+function displayMemories(memories) {
+    const container = document.getElementById('memoriesList');
+    if (!memories.length) {
+        container.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:30px;">No memories found</div>';
+        return;
+    }
+    container.innerHTML = memories.map(m => `
+        <div class="memory-item" data-id="${m.id}">
+            <div class="memory-meta">
+                <span>${new Date(m.timestamp).toLocaleString()}</span>
+                <span style="color:var(--accent)">${(m.importance * 100).toFixed(0)}% importance</span>
+            </div>
+            <div class="memory-text">${m.text}</div>
+            <div class="memory-actions">
+                <button class="mem-btn pin" onclick="togglePin('${m.id}', ${!m.pinned})">${m.pinned ? 'Unpin' : '📌 Pin'}</button>
+                <button class="mem-btn edit" onclick="editMemory('${m.id}')">Edit</button>
+                <button class="mem-btn del" onclick="deleteMemory('${m.id}')">Delete</button>
+            </div>
+        </div>
+    `).join('');
+}
+
+function filterMemories() {
+    const q = document.getElementById('memorySearch').value.toLowerCase();
+    displayMemories(q ? allMemories.filter(m => m.text.toLowerCase().includes(q)) : allMemories);
+}
+
+async function deleteMemory(id) {
+    if (!confirm('Delete this memory?')) return;
+    const agent = document.getElementById('memoryAgentSelector').value;
+    await fetch('/memory/delete', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ agent, memory_id: id }) });
+    loadMemories();
+}
+
+async function togglePin(id, pin) {
+    const agent = document.getElementById('memoryAgentSelector').value;
+    await fetch('/memory/pin', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ agent, memory_id: id, pinned: pin }) });
+    loadMemories();
+}
+
+function editMemory(id) {
+    const item = document.querySelector(`[data-id="${id}"]`);
+    const textDiv = item.querySelector('.memory-text');
+    const current = textDiv.textContent;
+    textDiv.innerHTML = `<textarea style="width:100%; min-height:80px; padding:8px; background:var(--bg-deep); border:1px solid var(--border); border-radius:6px; color:var(--text); font-family:var(--font-ui); resize:vertical;">${current}</textarea>
+    <div style="margin-top:8px; display:flex; gap:6px;">
+        <button class="mem-btn pin" onclick="saveMemoryEdit('${id}')">Save</button>
+        <button class="mem-btn del" onclick="loadMemories()">Cancel</button>
+    </div>`;
+}
+
+async function saveMemoryEdit(id) {
+    const agent = document.getElementById('memoryAgentSelector').value;
+    const text = document.querySelector(`[data-id="${id}"] textarea`).value;
+    await fetch('/memory/update', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ agent, memory_id: id, new_text: text }) });
+    loadMemories();
+}
+
+async function clearAllMemories() {
+    const agent = document.getElementById('memoryAgentSelector').value;
+    if (!confirm(`Clear all non-pinned memories for ${agent}?`)) return;
+    const res = await fetch(`/memory/clear/${agent}`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) { alert(`Cleared ${data.count} memories`); loadMemories(); }
+}
+
+async function pruneMemories() {
+    const agent = document.getElementById('memoryAgentSelector').value;
+    if (!confirm('Prune old, low-importance memories?')) return;
+    const res = await fetch(`/memory/prune/${agent}`, { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ days_old: 30, min_importance: 0.5 }) });
+    const data = await res.json();
+    if (data.success) { alert(`Pruned ${data.count} memories`); loadMemories(); }
+}
+
+// ── CONFERENCE ───────────────────────────────────────────────
+function openConference() { document.getElementById('conferenceModal').classList.add('active'); }
+function closeConference() { document.getElementById('conferenceModal').classList.remove('active'); }
+
+async function startConference() {
+    const topic = document.getElementById('conferenceTopic').value.trim();
+    const rounds = parseInt(document.getElementById('conferenceRounds').value);
+    if (!topic) { alert('Please enter a topic'); return; }
+    document.getElementById('conferenceChat').style.display = 'none';
+    document.getElementById('conferenceLoading').style.display = 'block';
+    try {
+        const res = await fetch('/conference', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ topic, rounds }) });
+        const data = await res.json();
+        document.getElementById('conferenceLoading').style.display = 'none';
+        const chat = document.getElementById('conferenceChat');
+        chat.style.display = 'block';
+        chat.innerHTML = data.conversation.map(m => `
+            <div style="margin-bottom:12px; padding:12px; background:var(--bg-mid); border-left:3px solid var(--accent); border-radius:6px;">
+                <div style="font-weight:700; color:var(--accent); margin-bottom:6px; font-size:12px;">${m.agent.toUpperCase()} — Round ${m.round}</div>
+                <div style="font-size:13px; line-height:1.6;">${m.response}</div>
+            </div>
+        `).join('');
+    } catch (err) { alert('Conference error: ' + err.message); }
+}
+
+// ── IMAGE GEN ────────────────────────────────────────────────
+function openImageGen() { document.getElementById('imageGenModal').classList.add('active'); }
+function closeImageGen() { document.getElementById('imageGenModal').classList.remove('active'); }
+
+async function generateImage() {
+    const prompt = document.getElementById('imagePrompt').value.trim();
+    if (!prompt) { alert('Enter a prompt'); return; }
+    closeImageGen();
+    addMessageToUI('user', `🎨 Generate: ${prompt}`);
+    await generateAgentImage(prompt);
+}
+
+async function generateAgentImage(prompt) {
+    const container = document.getElementById('messagesContainer');
+    const loading = document.createElement('div');
+    loading.className = 'message agent';
+    loading.innerHTML = `<div style="text-align:center; padding:30px; color:var(--text-muted);">🎨 Generating...</div>`;
+    container.appendChild(loading);
+    container.scrollTop = container.scrollHeight;
+    try {
+        const res = await fetch('/generate_image', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ prompt, agent: currentAgent }) });
+        const data = await res.json();
+        loading.remove();
+        if (data.status === 'complete') {
+            const div = document.createElement('div');
+            div.className = 'message agent';
+            div.innerHTML = `<img src="${data.image_url}" style="max-width:100%; border-radius:8px; margin-bottom:6px;"><div style="font-size:11px; color:var(--text-muted); font-style:italic;">${prompt}</div>`;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        } else {
+            addMessageToUI('agent', 'Error: ' + data.error);
+        }
+    } catch (err) { loading.remove(); addMessageToUI('agent', 'Error: ' + err.message); }
+}
+
+// ── CONFERENCE SPEECH ─────────────────────────────────────────
+async function playConferenceMessage(agent, text) {
+    const res = await fetch('/tts', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify({ text, agent, voice_accent: 50, speed: 1.3 }) });
+    const data = await res.json();
+    if (data.audio_url) new Audio(data.audio_url + '?t=' + Date.now()).play();
+}
+
+// Speak button element
+const speakBtn = document.createElement('button');
+speakBtn.id = 'speakBtn';
+speakBtn.textContent = '🎤 Hold to Speak';
+document.body.appendChild(speakBtn);
+</script>
+</body>
+</html>

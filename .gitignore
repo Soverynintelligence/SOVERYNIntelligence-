@@ -1,0 +1,61 @@
+# ── Models ──────────────────────────────────────────────────
+*.gguf
+*.bin
+*.pt
+*.safetensors
+*.pth
+
+# ── Python ──────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.egg-info/
+dist/
+build/
+
+# ── Environments / secrets ───────────────────────────────────
+.env
+.env.local
+venv/
+env/
+secrets.py
+credentials.json
+*.pem
+*.key
+*.crt
+
+# ── SOVERYN runtime data ─────────────────────────────────────
+soveryn_memory/chromadb/
+soveryn_memory/memory/
+soveryn_memory/lattice.db
+soveryn_memory/message_bus.db
+soveryn_memory/message_board.db
+soveryn_memory/aetheria_journal.jsonl
+soveryn_memory/aetheria_scratchpad.json
+soveryn_memory/scout_docs/
+soveryn_memory/library/
+
+# ── Generated audio ──────────────────────────────────────────
+static/*.wav
+static/*.mp3
+static/*.ogg
+
+# ── Logs ─────────────────────────────────────────────────────
+*.log
+*.jsonl
+
+# ── ComfyUI ──────────────────────────────────────────────────
+ComfyUI/
+
+# ── Misc ─────────────────────────────────────────────────────
+.DS_Store
+*.swp
+*.sqlite
+*.db
+node_modules/
+
+# ── Generated agent images ────────────────────────────────────
+static/aetheria_*.png
+static/charlie_*.png
+static/forge_*.png
+static/tinker_17*.png
+static/vett_17*.png

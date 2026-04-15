@@ -1,0 +1,1208 @@
+<!DOCTYPE html>
+<!-- SOVERYN Mobile — matches index6 design language. Serves at /mobile -->
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>SOVERYN</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<style>
+/* ── TOKENS ───────────────────────────────────────── */
+:root {
+  --bg:          #0B0E14;
+  --card-bg:     rgba(255,255,255,0.04);
+  --card-border: rgba(255,255,255,0.07);
+  --text:        #F1F5F9;
+  --text-sec:    #64748B;
+  --text-muted:  #334155;
+  --accent:      #F59E0B;
+  --blue:        #4A6070;
+  --active:      #10B981;
+  --warning:     #F59E0B;
+  --error:       #EF4444;
+  --mono:        'JetBrains Mono', monospace;
+  --sans:        'Inter', sans-serif;
+  --bottom-bar:  56px;
+}
+
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html, body { height:100%; overflow:hidden; }
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  display: flex;
+  flex-direction: column;
+  -webkit-font-smoothing: antialiased;
+}
+::-webkit-scrollbar { width:2px; }
+::-webkit-scrollbar-thumb { background:rgba(255,255,255,0.08); border-radius:2px; }
+
+/* ── TOP BAR ──────────────────────────────────────── */
+#topBar {
+  height: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  gap: 12px;
+  background: rgba(11,14,20,0.95);
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+  z-index: 100;
+}
+#topWordmark {
+  font-family: var(--mono);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  color: var(--text);
+  text-transform: uppercase;
+  flex: 1;
+}
+#topClock {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--text-muted);
+  letter-spacing: 0.05em;
+}
+#topDate {
+  font-family: var(--mono);
+  font-size: 10px;
+  color: #374151;
+  letter-spacing: 0.03em;
+}
+.top-sep {
+  width: 1px;
+  height: 10px;
+  background: rgba(255,255,255,0.07);
+}
+
+/* ── AGENT PILL SELECTOR ──────────────────────────── */
+#agentBar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  background: rgba(74,96,112,0.04);
+  border-bottom: 1px solid rgba(74,96,112,0.15);
+}
+#agentBar::-webkit-scrollbar { display:none; }
+
+.agent-pill {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--text-sec);
+  cursor: pointer;
+  transition: all 120ms ease;
+  white-space: nowrap;
+}
+.agent-pill.selected {
+  border-color: rgba(74,96,112,0.5);
+  background: rgba(74,96,112,0.12);
+  color: var(--text);
+  box-shadow: inset 0 1px 0 0 rgba(74,96,112,0.2);
+}
+.pill-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #3f3f46;
+  transition: background 150ms ease;
+}
+.pill-dot.active  { background: var(--active); }
+.pill-dot.processing { background: var(--accent); }
+
+/* ── CHAT AREA ────────────────────────────────────── */
+#chatWrap {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+/* User message */
+.msg-user {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 3px;
+}
+.msg-user-bubble {
+  background: rgba(74,96,112,0.12);
+  border: 1px solid rgba(74,96,112,0.25);
+  border-radius: 16px 16px 4px 16px;
+  padding: 10px 14px;
+  font-size: 14px;
+  line-height: 1.5;
+  max-width: 85%;
+  word-break: break-word;
+}
+.msg-user-meta {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-right: 4px;
+}
+
+/* Agent message */
+.msg-agent {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 92%;
+}
+.msg-agent-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: var(--blue);
+}
+.msg-agent-bubble {
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 4px 16px 16px 16px;
+  padding: 10px 14px;
+  font-size: 14px;
+  line-height: 1.6;
+  word-break: break-word;
+}
+.msg-agent-bubble p { margin: 0 0 8px; }
+.msg-agent-bubble p:last-child { margin-bottom: 0; }
+.msg-agent-bubble pre {
+  background: rgba(0,0,0,0.3);
+  border-radius: 6px;
+  padding: 10px;
+  overflow-x: auto;
+  font-size: 12px;
+  margin: 6px 0;
+}
+.msg-agent-bubble code {
+  font-family: var(--mono);
+  font-size: 12px;
+  background: rgba(0,0,0,0.25);
+  padding: 1px 4px;
+  border-radius: 3px;
+}
+.msg-agent-meta {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-left: 4px;
+}
+
+/* Typing indicator */
+.typing-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  margin: 0 2px;
+  animation: tdot 1.2s infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes tdot { 0%,80%,100%{opacity:0.2} 40%{opacity:1} }
+
+/* ── INPUT BAR ────────────────────────────────────── */
+#inputBar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  padding: 10px 12px;
+  padding-bottom: max(10px, env(safe-area-inset-bottom));
+  background: rgba(11,14,20,0.95);
+  border-top: 1px solid rgba(255,255,255,0.06);
+}
+#msgInput {
+  flex: 1;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 20px;
+  padding: 10px 16px;
+  color: var(--text);
+  font-family: var(--sans);
+  font-size: 15px;
+  outline: none;
+  resize: none;
+  max-height: 120px;
+  overflow-y: auto;
+  line-height: 1.4;
+}
+#msgInput:focus { border-color: rgba(74,96,112,0.4); }
+#msgInput::placeholder { color: var(--text-muted); }
+
+#sendBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  background: #4A6070;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+  transition: opacity 120ms ease;
+}
+#sendBtn:hover { opacity: 0.85; }
+#sendBtn.stopping { background: var(--error); }
+
+#micBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--text-sec);
+  transition: all 120ms ease;
+}
+#micBtn.active-mic {
+  background: rgba(239,68,68,0.12);
+  border-color: rgba(239,68,68,0.4);
+  color: var(--error);
+}
+
+/* ── BOTTOM SHEET (panels) ────────────────────────── */
+.sheet-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 200;
+  backdrop-filter: blur(4px);
+}
+.sheet-overlay.open { display: block; }
+
+.sheet {
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  background: #0F1319;
+  border-top: 1px solid rgba(74,96,112,0.2);
+  border-radius: 16px 16px 0 0;
+  padding: 0 0 env(safe-area-inset-bottom);
+  z-index: 201;
+  max-height: 75vh;
+  overflow-y: auto;
+  transform: translateY(100%);
+  transition: transform 280ms cubic-bezier(0.32,0.72,0,1);
+}
+.sheet-overlay.open .sheet { transform: translateY(0); }
+
+.sheet-handle {
+  width: 36px;
+  height: 4px;
+  background: rgba(255,255,255,0.12);
+  border-radius: 2px;
+  margin: 10px auto 4px;
+}
+
+.sheet-title {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-sec);
+  padding: 8px 18px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+}
+
+/* Status sheet rows */
+.status-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  font-size: 13px;
+}
+.status-row-name {
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--text);
+}
+.status-row-model {
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+.status-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-sec);
+}
+.s-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #3f3f46;
+}
+.s-dot.active { background: var(--active); }
+.s-dot.processing { background: var(--accent); }
+
+/* GPU rows in status sheet */
+.gpu-row {
+  padding: 10px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.gpu-row-label {
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+.gpu-bar-wrap {
+  height: 3px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 4px;
+}
+.gpu-bar-fill {
+  height: 100%;
+  background: var(--blue);
+  border-radius: 2px;
+  transition: width 600ms ease;
+}
+.gpu-meta {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--mono);
+  font-size: 9px;
+  color: var(--text-sec);
+}
+
+/* Weather in status sheet */
+.wx-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 18px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+}
+.wx-icon-big { font-size: 32px; line-height:1; }
+.wx-temp { font-family: var(--mono); font-size: 24px; font-weight: 500; color: var(--text); }
+.wx-detail { font-family: var(--mono); font-size: 10px; color: var(--text-sec); margin-top: 2px; }
+.wx-sub { display:flex; gap:14px; padding: 0 18px 12px; }
+.wx-sub-item { font-family:var(--mono); font-size:10px; color:var(--text-muted); }
+.wx-sub-item span { color: var(--text-sec); }
+
+/* VM badge strip */
+#vmStrip {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background: rgba(74,96,112,0.08);
+  border-bottom: 1px solid rgba(74,96,112,0.15);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  color: var(--text-sec);
+}
+#vmStrip.show { display: flex; }
+#vmStateText { color: var(--blue); font-weight: 500; }
+
+/* Attach badge */
+#attachBadge {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(74,96,112,0.08);
+  border-bottom: 1px solid rgba(74,96,112,0.12);
+  font-family: var(--mono);
+  font-size: 10px;
+  color: var(--text-sec);
+}
+#attachBadge.show { display: flex; }
+#attachRemove { background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:12px; padding:0 2px; }
+
+/* VM mode button */
+#vmBtn {
+  width: 40px;
+  height: 40px;
+  border-radius: 20px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.09);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 9px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  color: var(--text-sec);
+  transition: all 120ms ease;
+}
+#vmBtn.vm-on {
+  background: rgba(74,96,112,0.15);
+  border-color: rgba(74,96,112,0.5);
+  color: var(--text);
+}
+
+/* Attach button */
+#attachBtn {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+/* Status FAB */
+#statusFab {
+  position: fixed;
+  top: 56px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  border-radius: 17px;
+  background: rgba(74,96,112,0.12);
+  border: 1px solid rgba(74,96,112,0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 50;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+</style>
+</head>
+<body>
+
+<!-- TOP BAR -->
+<div id="topBar">
+  <div id="topWordmark">SOVERYN</div>
+  <div class="top-sep"></div>
+  <div id="topDate">--- -- ----</div>
+  <div class="top-sep"></div>
+  <div id="topClock">--:--:--</div>
+</div>
+
+<!-- AGENT PILL SELECTOR -->
+<div id="agentBar">
+  <div class="agent-pill selected" data-agent="aetheria">
+    <div class="pill-dot active" id="pdot-aetheria"></div>AETHERIA
+  </div>
+  <div class="agent-pill" data-agent="vett">
+    <div class="pill-dot" id="pdot-vett"></div>V.E.T.T.
+  </div>
+  <div class="agent-pill" data-agent="tinker">
+    <div class="pill-dot" id="pdot-tinker"></div>TINKER
+  </div>
+  <div class="agent-pill" data-agent="ares">
+    <div class="pill-dot" id="pdot-ares"></div>ARES
+  </div>
+  <div class="agent-pill" data-agent="scout">
+    <div class="pill-dot" id="pdot-scout"></div>SCOUT
+  </div>
+  <div class="agent-pill" data-agent="vision">
+    <div class="pill-dot" id="pdot-vision"></div>VISION
+  </div>
+</div>
+
+<!-- VM STATE STRIP -->
+<div id="vmStrip">
+  <span id="vmStateText">LISTENING</span>
+</div>
+
+<!-- ATTACH BADGE -->
+<div id="attachBadge">
+  <span id="attachName">file.jpg</span>
+  <button id="attachRemove">✕</button>
+</div>
+
+<!-- CHAT -->
+<div id="chatWrap"></div>
+
+<!-- STATUS FAB -->
+<div id="statusFab" id="statusFabBtn" title="System Status">
+  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+  </svg>
+</div>
+
+<!-- INPUT BAR -->
+<div id="inputBar">
+  <button id="attachBtn" title="Attach">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>
+    </svg>
+  </button>
+  <input type="file" id="fileInput" accept="image/*,.pdf,.docx,.txt" style="display:none">
+  <textarea id="msgInput" rows="1" placeholder="Message…"></textarea>
+  <button id="micBtn" title="Voice">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/>
+      <path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/>
+    </svg>
+  </button>
+  <button id="vmBtn" title="Voice Mode">VM</button>
+  <button id="sendBtn" title="Send">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <line x1="22" y1="2" x2="11" y2="13"/>
+      <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+    </svg>
+  </button>
+</div>
+
+<!-- STATUS SHEET -->
+<div class="sheet-overlay" id="statusSheet">
+  <div class="sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">System Status</div>
+
+    <!-- Weather -->
+    <div class="wx-row">
+      <span class="wx-icon-big" id="mWxIcon">--</span>
+      <div>
+        <div class="wx-temp" id="mWxTemp">--°F</div>
+        <div class="wx-detail" id="mWxDesc">--</div>
+      </div>
+    </div>
+    <div class="wx-sub">
+      <div class="wx-sub-item">FEELS <span id="mWxFeels">--°F</span></div>
+      <div class="wx-sub-item">HUMID <span id="mWxHumidity">--%</span></div>
+      <div class="wx-sub-item">WIND <span id="mWxWind">-- mph</span></div>
+    </div>
+
+    <!-- GPU -->
+    <div class="gpu-row">
+      <div class="gpu-row-label">CUDA 0 — Blackwell · 48GB</div>
+      <div class="gpu-bar-wrap"><div class="gpu-bar-fill" id="mg0bar" style="width:0%"></div></div>
+      <div class="gpu-meta">
+        <span id="mg0vram">-- / 48GB</span>
+        <span id="mg0temp">--°C</span>
+        <span id="mg0util">--%</span>
+      </div>
+    </div>
+    <div class="gpu-row">
+      <div class="gpu-row-label">CUDA 1/2 — Quadro NVLink · 96GB</div>
+      <div class="gpu-bar-wrap"><div class="gpu-bar-fill" id="mg1bar" style="width:0%"></div></div>
+      <div class="gpu-meta">
+        <span id="mg1vram">-- / 96GB</span>
+        <span id="mg1temp">--°C</span>
+        <span id="mg1util">--%</span>
+      </div>
+    </div>
+
+    <!-- Agents -->
+    <div class="sheet-title" style="margin-top:4px;">Agents</div>
+    <div class="status-row">
+      <div><div class="status-row-name">Aetheria</div><div class="status-row-model">Gemma-4-31B · CUDA 0</div></div>
+      <div class="status-badge"><div class="s-dot active" id="sdot-aetheria"></div><span id="slab-aetheria">ACTIVE</span></div>
+    </div>
+    <div class="status-row">
+      <div><div class="status-row-name">V.E.T.T.</div><div class="status-row-model">Qwen2.5-32B · CUDA 2</div></div>
+      <div class="status-badge"><div class="s-dot" id="sdot-vett"></div><span id="slab-vett">IDLE</span></div>
+    </div>
+    <div class="status-row">
+      <div><div class="status-row-name">Tinker</div><div class="status-row-model">Qwen2.5-Coder-32B · CUDA 2</div></div>
+      <div class="status-badge"><div class="s-dot" id="sdot-tinker"></div><span id="slab-tinker">IDLE</span></div>
+    </div>
+    <div class="status-row">
+      <div><div class="status-row-name">Ares</div><div class="status-row-model">Qwen3-14B · CUDA 2</div></div>
+      <div class="status-badge"><div class="s-dot" id="sdot-ares"></div><span id="slab-ares">IDLE</span></div>
+    </div>
+    <div class="status-row">
+      <div><div class="status-row-name">Scout</div><div class="status-row-model">Nemotron-49B · CUDA 2</div></div>
+      <div class="status-badge"><div class="s-dot" id="sdot-scout"></div><span id="slab-scout">IDLE</span></div>
+    </div>
+    <div class="status-row">
+      <div><div class="status-row-name">Vision</div><div class="status-row-model">Qwen2-VL-7B · CUDA 1</div></div>
+      <div class="status-badge"><div class="s-dot" id="sdot-vision"></div><span id="slab-vision">IDLE</span></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════
+   STATE
+══════════════════════════════════════════════════════ */
+let currentAgent = 'aetheria';
+let history = [];
+let sessionId = null;
+let streaming = false;
+let _attachImagePath = null;
+let _attachDocText = null;
+let _attachFileName = '';
+
+/* ══════════════════════════════════════════════════════
+   CLOCK + DATE
+══════════════════════════════════════════════════════ */
+const _DAYS   = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const _MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+function updateClock(){
+  const now = new Date();
+  document.getElementById('topClock').textContent =
+    now.toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit'});
+  document.getElementById('topDate').textContent =
+    `${_DAYS[now.getDay()]} ${_MONTHS[now.getMonth()]} ${now.getDate()}`;
+}
+updateClock();
+setInterval(updateClock, 1000);
+
+/* ══════════════════════════════════════════════════════
+   WEATHER
+══════════════════════════════════════════════════════ */
+const _WX_ICONS = {
+  0:'☀️',1:'🌤️',2:'⛅',3:'☁️',45:'🌫️',48:'🌫️',
+  51:'🌦️',53:'🌦️',55:'🌧️',61:'🌧️',63:'🌧️',65:'🌧️',
+  71:'🌨️',73:'🌨️',75:'❄️',80:'🌦️',81:'🌦️',82:'⛈️',
+  95:'⛈️',96:'⛈️',99:'⛈️',
+};
+const _WX_DESCS = {
+  0:'Clear sky',1:'Mainly clear',2:'Partly cloudy',3:'Overcast',
+  45:'Foggy',48:'Icy fog',51:'Light drizzle',53:'Drizzle',55:'Heavy drizzle',
+  61:'Light rain',63:'Rain',65:'Heavy rain',71:'Light snow',73:'Snow',75:'Heavy snow',
+  80:'Showers',81:'Showers',82:'Heavy showers',95:'Thunderstorm',96:'Thunderstorm',99:'Thunderstorm',
+};
+
+async function fetchWeather(){
+  try{
+    const geo = await fetch('https://ipapi.co/json/',{signal:AbortSignal.timeout(4000)});
+    const loc = await geo.json();
+    const wx = await fetch(
+      `https://api.open-meteo.com/v1/forecast?latitude=${loc.latitude}&longitude=${loc.longitude}`+
+      `&current=temperature_2m,apparent_temperature,weathercode,relative_humidity_2m,windspeed_10m`+
+      `&temperature_unit=fahrenheit&windspeed_unit=mph&timezone=auto`,
+      {signal:AbortSignal.timeout(5000)}
+    );
+    const wd = await wx.json();
+    const c = wd.current;
+    const icon = _WX_ICONS[c.weathercode] || '🌡️';
+    const desc = _WX_DESCS[c.weathercode] || 'Unknown';
+    document.getElementById('mWxIcon').textContent = icon;
+    document.getElementById('mWxTemp').textContent = `${Math.round(c.temperature_2m)}°F`;
+    document.getElementById('mWxDesc').textContent = desc;
+    document.getElementById('mWxFeels').textContent = `${Math.round(c.apparent_temperature)}°F`;
+    document.getElementById('mWxHumidity').textContent = `${Math.round(c.relative_humidity_2m)}%`;
+    document.getElementById('mWxWind').textContent = `${Math.round(c.windspeed_10m)} mph`;
+  }catch(e){}
+}
+fetchWeather();
+setInterval(fetchWeather, 10*60*1000);
+
+/* ══════════════════════════════════════════════════════
+   AGENT SELECTION
+══════════════════════════════════════════════════════ */
+const AGENT_LABELS = {
+  aetheria:'Aetheria', vett:'V.E.T.T.', tinker:'Tinker',
+  ares:'Ares', scout:'Scout', vision:'Vision'
+};
+
+document.querySelectorAll('.agent-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.agent-pill').forEach(p => p.classList.remove('selected'));
+    pill.classList.add('selected');
+    currentAgent = pill.dataset.agent;
+  });
+});
+
+/* ══════════════════════════════════════════════════════
+   AGENT STATUS
+══════════════════════════════════════════════════════ */
+function setAgentStatus(agent, status){
+  const pdot = document.getElementById('pdot-'+agent);
+  const sdot = document.getElementById('sdot-'+agent);
+  const slab = document.getElementById('slab-'+agent);
+  if(pdot) pdot.className = 'pill-dot' + (status !== 'idle' ? ' '+status : '');
+  if(sdot) sdot.className = 's-dot' + (status !== 'idle' ? ' '+status : '');
+  if(slab) slab.textContent = status.toUpperCase();
+}
+
+/* ══════════════════════════════════════════════════════
+   STATUS SHEET
+══════════════════════════════════════════════════════ */
+const statusSheet = document.getElementById('statusSheet');
+document.getElementById('statusFab').addEventListener('click', () => {
+  statusSheet.classList.add('open');
+});
+statusSheet.addEventListener('click', e => {
+  if(e.target === statusSheet) statusSheet.classList.remove('open');
+});
+
+/* ══════════════════════════════════════════════════════
+   GPU STATS POLL
+══════════════════════════════════════════════════════ */
+async function pollGPU(){
+  try{
+    const r = await fetch('/api/gpu_stats',{signal:AbortSignal.timeout(3000)});
+    if(!r.ok) return;
+    const d = await r.json();
+    const g = d.gpus || [];
+    if(g[0]){
+      const pct = Math.min(100, Math.round((g[0].memory_used/g[0].memory_total)*100));
+      document.getElementById('mg0bar').style.width = pct+'%';
+      document.getElementById('mg0vram').textContent =
+        `${Math.round(g[0].memory_used/1024)}/${Math.round(g[0].memory_total/1024)}GB`;
+      document.getElementById('mg0temp').textContent = g[0].temperature+'°C';
+      document.getElementById('mg0util').textContent = g[0].utilization+'%';
+    }
+    if(g[1]){
+      const used = (g[1].memory_used||0)+(g[2]?g[2].memory_used||0:0);
+      const total = 98304;
+      const pct = Math.min(100, Math.round((used/total)*100));
+      document.getElementById('mg1bar').style.width = pct+'%';
+      document.getElementById('mg1vram').textContent =
+        `${Math.round(used/1024)}/${Math.round(total/1024)}GB`;
+      document.getElementById('mg1temp').textContent = g[1].temperature+'°C';
+      document.getElementById('mg1util').textContent = g[1].utilization+'%';
+    }
+  }catch(e){}
+}
+pollGPU();
+setInterval(pollGPU, 8000);
+
+/* ══════════════════════════════════════════════════════
+   CHAT HELPERS
+══════════════════════════════════════════════════════ */
+function fmtTime(){
+  return new Date().toLocaleTimeString('en-US',{hour12:false,hour:'2-digit',minute:'2-digit'});
+}
+function escHtml(s){
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function appendUserMsg(text, attachName){
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-user';
+  let inner = escHtml(text).replace(/\n/g,'<br>');
+  if(attachName) inner = `<div style="font-family:var(--mono);font-size:9px;color:var(--text-muted);margin-bottom:4px;">📎 ${escHtml(attachName)}</div>${inner}`;
+  wrap.innerHTML = `<div class="msg-user-bubble">${inner}</div><div class="msg-user-meta">${fmtTime()}</div>`;
+  document.getElementById('chatWrap').appendChild(wrap);
+  scrollBottom();
+}
+
+function appendAgentMsg(text){
+  const label = (AGENT_LABELS[currentAgent]||currentAgent).toUpperCase();
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-agent';
+  let display = text;
+  display = display.replace(/<think>[\s\S]*?<\/think>/gi,'').trim();
+  const rendered = (typeof marked !== 'undefined') ? marked.parse(display) : escHtml(display).replace(/\n/g,'<br>');
+  wrap.innerHTML = `
+    <div class="msg-agent-label">${label}</div>
+    <div class="msg-agent-bubble">${rendered}</div>
+    <div class="msg-agent-meta">${fmtTime()}</div>
+  `;
+  document.getElementById('chatWrap').appendChild(wrap);
+  scrollBottom();
+}
+
+function appendTyping(){
+  const wrap = document.createElement('div');
+  wrap.className = 'msg-agent';
+  wrap.id = 'typingIndicator';
+  wrap.innerHTML = `
+    <div class="msg-agent-label">${(AGENT_LABELS[currentAgent]||currentAgent).toUpperCase()}</div>
+    <div class="msg-agent-bubble">
+      <span class="typing-dot"></span><span class="typing-dot"></span><span class="typing-dot"></span>
+    </div>`;
+  document.getElementById('chatWrap').appendChild(wrap);
+  scrollBottom();
+}
+function removeTyping(){ document.getElementById('typingIndicator')?.remove(); }
+
+function scrollBottom(){
+  const c = document.getElementById('chatWrap');
+  c.scrollTop = c.scrollHeight;
+}
+
+/* ══════════════════════════════════════════════════════
+   SEND MESSAGE
+══════════════════════════════════════════════════════ */
+async function sendMessage(msg){
+  if(!msg.trim() || streaming) return;
+  streaming = true;
+
+  const sendBtn = document.getElementById('sendBtn');
+  sendBtn.classList.add('stopping');
+  sendBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><rect x="4" y="4" width="16" height="16" rx="2"/></svg>`;
+
+  const imagePath = _attachImagePath;
+  const docText   = _attachDocText;
+  const attachedName = _attachFileName;
+  clearAttachment();
+
+  let fullMsg = msg;
+  if(docText) fullMsg = `[Document: ${attachedName}]\n\n${docText}\n\n---\n${msg}`;
+
+  appendUserMsg(msg, attachedName);
+  history.push({role:'user', content:fullMsg});
+  appendTyping();
+  setAgentStatus(currentAgent, 'processing');
+
+  try{
+    const payload = {
+      agent: currentAgent,
+      message: fullMsg,
+      session_id: sessionId,
+      conversation_history: history.slice(-8)
+    };
+    if(imagePath) payload.image_path = imagePath;
+
+    const res = await fetch('/chat_stream',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify(payload)
+    });
+
+    removeTyping();
+    const label = (AGENT_LABELS[currentAgent]||currentAgent).toUpperCase();
+    const chatWrap = document.getElementById('chatWrap');
+    const wrap = document.createElement('div');
+    wrap.className = 'msg-agent';
+    wrap.innerHTML = `
+      <div class="msg-agent-label">${label}</div>
+      <div class="msg-agent-bubble" id="streamBubble"></div>
+      <div class="msg-agent-meta">${fmtTime()}</div>`;
+    chatWrap.appendChild(wrap);
+    const bubble = document.getElementById('streamBubble');
+
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let full = '';
+
+    while(true){
+      const {done, value} = await reader.read();
+      if(done) break;
+      const chunk = dec.decode(value, {stream:true});
+      for(const line of chunk.split('\n')){
+        if(!line.startsWith('data:')) continue;
+        const raw = line.slice(5).trim();
+        if(raw === '[DONE]') break;
+        try{
+          const j = JSON.parse(raw);
+          if(j.token){
+            if(full === '') setAgentStatus(currentAgent, 'active');
+            full += j.token;
+            bubble.textContent = full;
+            scrollBottom();
+          }
+          if(j.session_id) sessionId = j.session_id;
+        }catch(e){}
+      }
+    }
+
+    // Render markdown
+    let display = full.replace(/<think>[\s\S]*?<\/think>/gi,'').trim();
+    const rendered = (typeof marked !== 'undefined') ? marked.parse(display) : escHtml(display).replace(/\n/g,'<br>');
+    bubble.removeAttribute('id');
+    bubble.innerHTML = rendered;
+    history.push({role:'assistant', content:full});
+
+  }catch(e){
+    removeTyping();
+    appendAgentMsg('[Connection error — '+e.message+']');
+  }finally{
+    streaming = false;
+    setAgentStatus(currentAgent, 'idle');
+    sendBtn.classList.remove('stopping');
+    sendBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>`;
+  }
+}
+
+/* Input handling */
+const msgInput = document.getElementById('msgInput');
+msgInput.addEventListener('input', () => {
+  msgInput.style.height = 'auto';
+  msgInput.style.height = Math.min(msgInput.scrollHeight, 120)+'px';
+});
+msgInput.addEventListener('keydown', e => {
+  if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); doSend(); }
+});
+document.getElementById('sendBtn').addEventListener('click', doSend);
+
+function doSend(){
+  const msg = msgInput.value.trim();
+  if(!msg) return;
+  msgInput.value = ''; msgInput.style.height = 'auto';
+  sendMessage(msg);
+}
+
+/* ══════════════════════════════════════════════════════
+   VOICE (single-clip)
+══════════════════════════════════════════════════════ */
+let mediaRec = null, voiceActive = false, audioChunks = [];
+const micBtn = document.getElementById('micBtn');
+
+function getSupportedMime(){
+  const types = ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg;codecs=opus'];
+  return types.find(t => MediaRecorder.isTypeSupported(t)) || '';
+}
+
+micBtn.addEventListener('click', async () => {
+  if(voiceActive){
+    if(mediaRec && voiceActive) mediaRec.stop();
+    voiceActive = false;
+    micBtn.classList.remove('active-mic');
+    return;
+  }
+  try{
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    const mime = getSupportedMime();
+    mediaRec = new MediaRecorder(stream, mime ? {mimeType:mime} : {});
+    audioChunks = [];
+    mediaRec.ondataavailable = e => { if(e.data.size>0) audioChunks.push(e.data); };
+    mediaRec.onstop = async () => {
+      stream.getTracks().forEach(t=>t.stop());
+      await sendVoice();
+    };
+    mediaRec.start();
+    voiceActive = true;
+    micBtn.classList.add('active-mic');
+  }catch(e){ alert('Mic access denied'); }
+});
+
+async function sendVoice(){
+  const mime = getSupportedMime();
+  const blob = new Blob(audioChunks, {type: mime || 'audio/webm'});
+  const fd = new FormData();
+  fd.append('audio', blob, 'voice.webm');
+  fd.append('agent', currentAgent);
+  fd.append('history', JSON.stringify(history.slice(-8)));
+  setAgentStatus(currentAgent, 'processing');
+  try{
+    const res = await fetch('/voice/speak',{method:'POST',body:fd});
+    if(!res.ok){ setAgentStatus(currentAgent,'idle'); return; }
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf = '';
+    while(true){
+      const {done,value} = await reader.read();
+      if(done) break;
+      buf += dec.decode(value,{stream:true});
+      const lines = buf.split('\n'); buf = lines.pop();
+      for(const line of lines){
+        if(!line.startsWith('data:')) continue;
+        try{
+          const ev = JSON.parse(line.slice(5).trim());
+          if(ev.type==='transcript'){
+            appendUserMsg(ev.text,'');
+            history.push({role:'user',content:ev.text});
+          }else if(ev.type==='agent_text'){
+            setAgentStatus(currentAgent,'active');
+            appendAgentMsg(ev.text);
+            history.push({role:'assistant',content:ev.text});
+          }
+        }catch(e){}
+      }
+    }
+  }catch(e){ console.error('[Voice]',e); }
+  finally{ setAgentStatus(currentAgent,'idle'); }
+}
+
+/* ══════════════════════════════════════════════════════
+   VOICE MODE (continuous VAD)
+══════════════════════════════════════════════════════ */
+const SILENCE_THRESHOLD = 0.012;
+const SILENCE_DURATION  = 1200;
+const MIN_SPEECH_MS     = 400;
+const MAX_LISTEN_MS     = 30000;
+
+let vmOn = false, vmStream = null, vmAudioCtx = null, vmAnalyser = null, vmState = 'idle';
+const vmBtn = document.getElementById('vmBtn');
+const vmStrip = document.getElementById('vmStrip');
+const vmStateText = document.getElementById('vmStateText');
+
+function vmSetState(s){
+  vmState = s;
+  vmStateText.textContent = s.toUpperCase();
+  vmStrip.className = s !== 'idle' ? 'show' : '';
+}
+
+vmBtn.addEventListener('click', async () => {
+  if(vmOn){ stopVM(); return; }
+  try{
+    vmStream = await navigator.mediaDevices.getUserMedia({audio:true});
+    vmAudioCtx = new AudioContext();
+    const src = vmAudioCtx.createMediaStreamSource(vmStream);
+    vmAnalyser = vmAudioCtx.createAnalyser();
+    vmAnalyser.fftSize = 512;
+    src.connect(vmAnalyser);
+  }catch(e){ alert('Mic access denied'); return; }
+  vmOn = true;
+  vmBtn.classList.add('vm-on');
+  vmBtn.textContent = 'END';
+  vmLoop();
+});
+
+function stopVM(){
+  vmOn = false;
+  vmBtn.classList.remove('vm-on');
+  vmBtn.textContent = 'VM';
+  if(vmStream){ vmStream.getTracks().forEach(t=>t.stop()); vmStream=null; }
+  if(vmAudioCtx){ vmAudioCtx.close(); vmAudioCtx=null; }
+  vmAnalyser = null;
+  vmSetState('idle');
+}
+
+function vmRecord(){
+  return new Promise(resolve => {
+    const chunks = [];
+    let hasSpoken=false, speechStart=null, silenceTimer=null;
+    const mime = getSupportedMime();
+    const rec = new MediaRecorder(vmStream, mime ? {mimeType:mime} : {});
+    rec.ondataavailable = e => { if(e.data.size>0) chunks.push(e.data); };
+    rec.onstop = () => resolve(hasSpoken ? chunks : null);
+    rec.start(100);
+    const maxT = setTimeout(()=>{ if(rec.state==='recording') rec.stop(); }, MAX_LISTEN_MS);
+    const vadBuf = new Uint8Array(vmAnalyser.frequencyBinCount);
+    function vad(){
+      if(!vmOn || vmState !== 'listening'){ clearTimeout(silenceTimer); clearTimeout(maxT); if(rec.state==='recording') rec.stop(); return; }
+      vmAnalyser.getByteTimeDomainData(vadBuf);
+      let sum=0; for(let i=0;i<vadBuf.length;i++){const v=(vadBuf[i]-128)/128; sum+=v*v;}
+      const rms=Math.sqrt(sum/vadBuf.length);
+      if(rms>SILENCE_THRESHOLD){ if(!speechStart) speechStart=Date.now(); hasSpoken=true; clearTimeout(silenceTimer); silenceTimer=null; }
+      else if(hasSpoken && !silenceTimer){ if(Date.now()-speechStart>=MIN_SPEECH_MS){ silenceTimer=setTimeout(()=>{ clearTimeout(maxT); if(rec.state==='recording') rec.stop(); }, SILENCE_DURATION); } }
+      requestAnimationFrame(vad);
+    }
+    vad();
+  });
+}
+
+async function vmCallAndPlay(chunks){
+  const mime = getSupportedMime();
+  const blob = new Blob(chunks,{type: mime || 'audio/webm'});
+  const fd = new FormData();
+  fd.append('audio',blob,'voice.webm');
+  fd.append('agent',currentAgent);
+  fd.append('history',JSON.stringify(history.slice(-8)));
+  vmSetState('processing');
+  setAgentStatus(currentAgent,'processing');
+  const ttsUrls=[];
+  try{
+    const res = await fetch('/voice/speak',{method:'POST',body:fd});
+    if(!res.ok){ return; }
+    const reader = res.body.getReader();
+    const dec = new TextDecoder();
+    let buf='';
+    while(true){
+      const {done,value}=await reader.read();
+      if(done) break;
+      buf+=dec.decode(value,{stream:true});
+      const lines=buf.split('\n'); buf=lines.pop();
+      for(const line of lines){
+        if(!line.startsWith('data:')) continue;
+        try{
+          const ev=JSON.parse(line.slice(5).trim());
+          if(ev.type==='transcript'){ appendUserMsg(ev.text,''); history.push({role:'user',content:ev.text}); }
+          else if(ev.type==='agent_text'){ setAgentStatus(currentAgent,'active'); appendAgentMsg(ev.text); history.push({role:'assistant',content:ev.text}); }
+          else if(ev.type==='tts'){ ttsUrls.push(ev.url); }
+        }catch(e){}
+      }
+    }
+  }catch(e){ console.error('[VM]',e); }
+  if(ttsUrls.length && vmOn){
+    vmSetState('speaking');
+    setAgentStatus(currentAgent,'active');
+    await new Promise(r=>setTimeout(r, ttsUrls.length*3500));
+  }
+  setAgentStatus(currentAgent,'idle');
+}
+
+async function vmLoop(){
+  while(vmOn){
+    vmSetState('listening');
+    const chunks = await vmRecord();
+    if(!vmOn) break;
+    if(!chunks) continue;
+    await vmCallAndPlay(chunks);
+  }
+  if(vmOn) stopVM();
+}
+
+/* ══════════════════════════════════════════════════════
+   FILE ATTACHMENT
+══════════════════════════════════════════════════════ */
+const attachBtn   = document.getElementById('attachBtn');
+const fileInput   = document.getElementById('fileInput');
+const attachBadge = document.getElementById('attachBadge');
+const attachName  = document.getElementById('attachName');
+const attachRemove= document.getElementById('attachRemove');
+
+attachBtn.addEventListener('click', ()=>fileInput.click());
+attachRemove.addEventListener('click', clearAttachment);
+
+function clearAttachment(){
+  _attachImagePath=null; _attachDocText=null; _attachFileName='';
+  attachBadge.classList.remove('show');
+  attachBtn.style.color='';
+  fileInput.value='';
+}
+
+fileInput.addEventListener('change', async ()=>{
+  const file = fileInput.files[0];
+  if(!file) return;
+  const ext = file.name.split('.').pop().toLowerCase();
+  const isImage = ['jpg','jpeg','png','gif','webp','bmp'].includes(ext);
+  const isDoc   = ['pdf','docx','txt'].includes(ext);
+  if(!isImage && !isDoc){ alert('Unsupported file type.'); fileInput.value=''; return; }
+
+  _attachFileName = file.name;
+  attachName.textContent = 'Uploading…';
+  attachBadge.classList.add('show');
+
+  try{
+    if(isImage){
+      const fd=new FormData(); fd.append('file',file);
+      const r=await fetch('/upload',{method:'POST',body:fd});
+      const d=await r.json();
+      if(d.filepath){ _attachImagePath=d.filepath; attachName.textContent=file.name; attachBtn.style.color='var(--accent)'; }
+      else{ alert('Upload failed'); clearAttachment(); }
+    }else{
+      const fd=new FormData(); fd.append('file',file);
+      const r=await fetch('/upload_doc',{method:'POST',body:fd});
+      const d=await r.json();
+      if(d.text){ _attachDocText=d.text; attachName.textContent=file.name; attachBtn.style.color='var(--accent)'; }
+      else{ alert('Upload failed'); clearAttachment(); }
+    }
+  }catch(e){ alert('Upload error: '+e.message); clearAttachment(); }
+});
+</script>
+</body>
+</html>

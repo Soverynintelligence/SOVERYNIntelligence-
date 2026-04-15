@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>SOVERYN</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg-base:#0e0e0e;--bg-elevated:#1a1a1a;--bg-overlay:#222222;--bg-active:#2a2a2a;
+    --border:rgba(255,255,255,0.08);--border-strong:rgba(255,255,255,0.14);
+    --text-primary:#ececec;--text-secondary:#a0a0a0;--text-muted:#606060;--text-inverse:#0e0e0e;
+    --accent:#d4825a;--tier1:#d4825a;--tier2:#7eb8d4;--tier3:#8ec98e;
+    --status-online:#5acd8a;--status-idle:#d4b95a;--status-offline:#606060;--status-error:#d45a5a;
+    --space-sm:8px;--space-md:14px;--space-lg:20px;--space-xl:28px;--space-2xl:40px;
+    --radius-sm:6px;--radius-md:10px;--radius-lg:16px;--radius-xl:22px;--radius-pill:50px;
+    --font-body:'DM Sans',system-ui,sans-serif;--font-mono:'Fira Code','Cascadia Code',monospace;
+    --nav-h:64px;--header-h:56px;
+  }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%;width:100%;overflow:hidden;background:var(--bg-base);color:var(--text-primary);font-family:var(--font-body);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;-webkit-tap-highlight-color:transparent}
+  #app{display:flex;flex-direction:column;height:100dvh;width:100%;max-width:430px;margin:0 auto;position:relative;overflow:hidden}
+  /* Header */
+  .header{height:var(--header-h);min-height:var(--header-h);display:flex;align-items:center;justify-content:space-between;padding:0 var(--space-lg);border-bottom:1px solid var(--border);background:var(--bg-base);z-index:10}
+  .header-wordmark{display:flex;align-items:center;gap:var(--space-sm)}
+  .header-logo{width:28px;height:28px;flex-shrink:0}
+  .header-title{font-size:16px;font-weight:600;letter-spacing:0.12em}
+  .header-actions{display:flex;gap:var(--space-sm);align-items:center}
+  .icon-btn{width:36px;height:36px;border-radius:var(--radius-md);border:1px solid var(--border);background:transparent;color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .icon-btn svg{width:18px;height:18px}
+  .heartbeat-pill{display:flex;align-items:center;gap:6px;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-pill);padding:4px 10px;font-size:11px;color:var(--text-secondary)}
+  .heartbeat-dot{width:6px;height:6px;border-radius:50%;background:var(--status-offline);animation:pulse 2s infinite}
+  @keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.8)}}
+  /* Views */
+  .view{flex:1;overflow-y:auto;overflow-x:hidden;display:none;flex-direction:column;padding-bottom:calc(var(--nav-h) + 8px)}
+  .view.active{display:flex}
+  .view::-webkit-scrollbar{display:none}
+  .section-label{font-size:10.5px;font-weight:600;letter-spacing:0.12em;text-transform:uppercase;color:var(--text-muted);padding:var(--space-lg) var(--space-lg) var(--space-sm)}
+  /* Agent cards */
+  .agent-list{display:flex;flex-direction:column;gap:2px;padding:0 var(--space-sm)}
+  .agent-card{display:flex;align-items:center;gap:var(--space-md);padding:var(--space-md);border-radius:var(--radius-md);cursor:pointer;transition:background .12s}
+  .agent-card:active,.agent-card.selected{background:var(--bg-elevated)}
+  .agent-avatar{width:44px;height:44px;border-radius:50%;background:var(--bg-overlay);border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;position:relative}
+  .agent-avatar.tier1{border-color:var(--tier1);box-shadow:0 0 0 1px rgba(212,130,90,.25)}
+  .agent-avatar.tier2{border-color:var(--tier2)}
+  .status-badge{position:absolute;bottom:1px;right:1px;width:10px;height:10px;border-radius:50%;border:2px solid var(--bg-base)}
+  .status-badge.online{background:var(--status-online)}.status-badge.idle{background:var(--status-idle)}.status-badge.offline{background:var(--status-offline)}
+  .agent-info{flex:1;min-width:0}
+  .agent-name{font-size:14px;font-weight:500;display:flex;align-items:center;gap:6px}
+  .tier-tag{font-size:9px;font-weight:600;letter-spacing:.1em;padding:1px 5px;border-radius:3px;text-transform:uppercase}
+  .tier-tag.t1{background:rgba(212,130,90,.15);color:var(--tier1)}.tier-tag.t2{background:rgba(126,184,212,.12);color:var(--tier2)}
+  .agent-role{font-size:12px;color:var(--text-muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .agent-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+  .agent-gpu{font-size:10px;font-family:var(--font-mono);color:var(--text-muted);background:var(--bg-overlay);padding:2px 6px;border-radius:4px}
+  /* Aetheria banner */
+  .aetheria-banner{margin:var(--space-md) var(--space-md) 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-lg);padding:var(--space-lg);position:relative;overflow:hidden}
+  .aetheria-banner::before{content:'';position:absolute;top:-30px;right:-30px;width:120px;height:120px;background:radial-gradient(circle,rgba(212,130,90,.18) 0%,transparent 70%);border-radius:50%;pointer-events:none}
+  .ab-top{display:flex;align-items:flex-start;gap:var(--space-md);margin-bottom:var(--space-md)}
+  .ab-avatar{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,rgba(212,130,90,.3),rgba(212,130,90,.05));border:1.5px solid var(--tier1);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0}
+  .ab-name{font-size:15px;font-weight:600;display:flex;align-items:center;gap:6px}
+  .ab-status{font-size:11px;color:var(--text-secondary);margin-top:2px}
+  .ab-thought{font-size:13px;color:var(--text-secondary);line-height:1.55;font-style:italic;border-left:2px solid var(--accent);padding-left:var(--space-sm);margin-bottom:var(--space-md)}
+  .ab-actions{display:flex;gap:var(--space-sm)}
+  .btn-primary{flex:1;padding:9px var(--space-md);background:var(--accent);color:var(--text-inverse);border:none;border-radius:var(--radius-sm);font-size:13px;font-weight:600;font-family:var(--font-body);cursor:pointer}
+  .btn-primary:active{opacity:.85}
+  .btn-ghost{padding:9px var(--space-md);background:transparent;color:var(--text-secondary);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:13px;font-family:var(--font-body);cursor:pointer}
+  /* Telegram banner */
+  .tg-banner{margin:var(--space-sm) var(--space-md);background:rgba(126,184,212,.08);border:1px solid rgba(126,184,212,.2);border-radius:var(--radius-md);padding:var(--space-md);display:flex;align-items:center;gap:var(--space-md)}
+  .tg-title{font-size:12px;font-weight:600;color:var(--tier2)}.tg-sub{font-size:11px;color:var(--text-muted)}
+  /* Chat */
+  .chat-header{display:flex;align-items:center;gap:var(--space-md);padding:var(--space-md) var(--space-lg);border-bottom:1px solid var(--border)}
+  .chat-header-avatar{width:36px;height:36px;border-radius:50%;background:var(--bg-overlay);border:1.5px solid var(--tier1);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+  .chat-header-info{flex:1}
+  .chat-header-name{font-size:14px;font-weight:500}
+  .chat-header-model{font-size:11px;color:var(--text-muted);font-family:var(--font-mono)}
+  .chat-messages{flex:1;overflow-y:auto;padding:var(--space-md);display:flex;flex-direction:column;gap:var(--space-md)}
+  .chat-messages::-webkit-scrollbar{display:none}
+  .msg-row{display:flex;align-items:flex-end;gap:var(--space-sm)}
+  .msg-row.user{flex-direction:row-reverse}
+  .msg-avatar{width:28px;height:28px;border-radius:50%;background:var(--bg-overlay);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;margin-bottom:2px}
+  .msg-avatar.agent{border-color:var(--tier1)}
+  .msg-bubble{max-width:78%;padding:var(--space-sm) var(--space-md);border-radius:var(--radius-lg);font-size:14px;line-height:1.55}
+  .msg-bubble.agent{background:var(--bg-elevated);border:1px solid var(--border);border-bottom-left-radius:var(--radius-sm)}
+  .msg-bubble.user{background:var(--accent);color:var(--text-inverse);border-bottom-right-radius:var(--radius-sm)}
+  .msg-time{font-size:10px;color:var(--text-muted);padding:0 4px 4px;align-self:flex-end}
+  .chat-input-area{padding:var(--space-sm) var(--space-md);border-top:1px solid var(--border);display:flex;gap:var(--space-sm);align-items:flex-end;background:var(--bg-base)}
+  .chat-input-wrap{flex:1;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-xl);display:flex;align-items:center;padding:0 var(--space-md)}
+  .chat-input-wrap:focus-within{border-color:var(--border-strong)}
+  .chat-input{flex:1;background:transparent;border:none;outline:none;color:var(--text-primary);font-size:14px;font-family:var(--font-body);padding:10px 0;resize:none;min-height:40px;max-height:120px}
+  .chat-input::placeholder{color:var(--text-muted)}
+  .mic-btn{width:38px;height:38px;border-radius:50%;background:var(--bg-elevated);border:1px solid var(--border);color:var(--text-secondary);display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;font-size:17px}
+  .mic-btn.recording{background:var(--status-error);border-color:var(--status-error);color:#fff}
+  .send-btn{width:38px;height:38px;border-radius:50%;background:var(--accent);border:none;color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+  .send-btn:active{opacity:.8}
+  .send-btn svg{width:16px;height:16px}
+  /* Mission control */
+  .mc-grid{display:grid;grid-template-columns:1fr 1fr;gap:var(--space-sm);padding:var(--space-md)}
+  .mc-card{background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-md);padding:var(--space-md)}
+  .mc-card.span2{grid-column:1/-1}
+  .mc-card-label{font-size:10px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--text-muted);margin-bottom:var(--space-sm)}
+  .mc-card-value{font-size:22px;font-weight:600;font-family:var(--font-mono)}
+  .mc-card-sub{font-size:11px;color:var(--text-muted);margin-top:2px}
+  .compute-bar-row{display:flex;align-items:center;gap:var(--space-sm);margin-bottom:8px}
+  .compute-bar-label{font-size:11px;font-family:var(--font-mono);color:var(--text-muted);width:54px;flex-shrink:0}
+  .compute-bar-track{flex:1;height:5px;background:var(--bg-active);border-radius:3px;overflow:hidden}
+  .compute-bar-fill{height:100%;border-radius:3px;transition:width .8s cubic-bezier(.4,0,.2,1)}
+  .compute-bar-fill.gpu0{background:var(--accent)}.compute-bar-fill.gpu1{background:var(--tier2)}.compute-bar-fill.gpu2{background:var(--tier3)}.compute-bar-fill.cpu{background:var(--text-muted)}
+  .compute-bar-pct{font-size:10px;font-family:var(--font-mono);color:var(--text-muted);width:30px;text-align:right;flex-shrink:0}
+  .comm-row{display:flex;align-items:flex-start;gap:var(--space-sm);padding:7px 0;border-bottom:1px solid var(--border)}
+  .comm-row:last-child{border-bottom:none}
+  .comm-from{font-size:11px;font-weight:600;color:var(--accent);width:58px;flex-shrink:0;font-family:var(--font-mono)}
+  .comm-to{font-size:11px;color:var(--text-muted);width:48px;flex-shrink:0;font-family:var(--font-mono)}
+  .comm-msg{font-size:12px;color:var(--text-secondary);flex:1;line-height:1.4}
+  .comm-ts{font-size:10px;color:var(--text-muted);font-family:var(--font-mono);flex-shrink:0}
+  /* Queue */
+  .queue-summary{display:flex;gap:var(--space-sm);padding:var(--space-md);margin:var(--space-md) var(--space-md) 0;background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-md)}
+  .qs-item{flex:1;text-align:center}
+  .qs-num{font-size:20px;font-weight:700;font-family:var(--font-mono)}
+  .qs-label{font-size:10px;color:var(--text-muted);letter-spacing:.06em;text-transform:uppercase}
+  .qs-divider{width:1px;background:var(--border);margin:4px 0}
+  .approval-list{display:flex;flex-direction:column;gap:var(--space-sm);padding:var(--space-sm) var(--space-md)}
+  .approval-card{background:var(--bg-elevated);border:1px solid var(--border);border-radius:var(--radius-md);overflow:hidden}
+  .approval-card.urgent{border-color:rgba(212,130,90,.4)}
+  .approval-header{display:flex;align-items:center;gap:var(--space-sm);padding:var(--space-md);border-bottom:1px solid var(--border)}
+  .approval-agent-tag{font-size:10px;font-weight:700;letter-spacing:.08em;padding:2px 7px;border-radius:4px;font-family:var(--font-mono)}
+  .approval-agent-tag.tinker{background:rgba(126,184,212,.15);color:var(--tier2)}
+  .approval-agent-tag.aetheria{background:rgba(212,130,90,.15);color:var(--tier1)}
+  .approval-type{font-size:12px;color:var(--text-secondary);flex:1}
+  .approval-ts{font-size:10px;color:var(--text-muted);font-family:var(--font-mono)}
+  .approval-body{padding:var(--space-md)}
+  .approval-preview{font-size:13px;line-height:1.5;margin-bottom:var(--space-sm)}
+  .approval-meta{font-size:11px;color:var(--text-muted);font-family:var(--font-mono);margin-bottom:var(--space-md)}
+  .approval-actions{display:flex;gap:var(--space-sm)}
+  .btn-approve{flex:1;padding:8px;background:rgba(90,205,138,.12);color:var(--status-online);border:1px solid rgba(90,205,138,.25);border-radius:var(--radius-sm);font-size:12px;font-weight:600;font-family:var(--font-body);cursor:pointer}
+  .btn-reject{flex:1;padding:8px;background:rgba(212,90,90,.1);color:var(--status-error);border:1px solid rgba(212,90,90,.2);border-radius:var(--radius-sm);font-size:12px;font-weight:600;font-family:var(--font-body);cursor:pointer}
+  .btn-edit{padding:8px 12px;background:transparent;color:var(--text-muted);border:1px solid var(--border);border-radius:var(--radius-sm);font-size:12px;font-family:var(--font-body);cursor:pointer}
+  /* Settings */
+  .settings-list{display:flex;flex-direction:column;gap:2px;padding:0 var(--space-md)}
+  .settings-row{display:flex;align-items:center;gap:var(--space-md);padding:var(--space-md);border-radius:var(--radius-md);cursor:pointer;transition:background .12s}
+  .settings-row:active{background:var(--bg-active)}
+  .settings-icon{width:34px;height:34px;border-radius:var(--radius-sm);background:var(--bg-overlay);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+  .settings-info{flex:1}
+  .settings-label{font-size:14px}
+  .settings-sub{font-size:11px;color:var(--text-muted);margin-top:1px}
+  .settings-chevron{color:var(--text-muted)}
+  .settings-chevron svg{width:16px;height:16px}
+  /* Bottom nav */
+  .bottom-nav{height:var(--nav-h);min-height:var(--nav-h);display:flex;border-top:1px solid var(--border);background:var(--bg-base);z-index:10;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .nav-item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;cursor:pointer;padding:var(--space-sm) 0;color:var(--text-muted);position:relative;-webkit-tap-highlight-color:transparent}
+  .nav-item.active{color:var(--accent)}
+  .nav-item svg{width:20px;height:20px}
+  .nav-label{font-size:10px;font-weight:500;letter-spacing:.04em}
+  .nav-badge{position:absolute;top:6px;right:calc(50% - 14px);width:16px;height:16px;background:var(--accent);border-radius:50%;font-size:9px;font-weight:700;color:#fff;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg-base)}
+  /* Typing */
+  .typing-indicator{display:flex;align-items:center;gap:4px;padding:10px 14px}
+  .typing-dot{width:6px;height:6px;background:var(--text-muted);border-radius:50%;animation:typingBounce 1.2s infinite}
+  .typing-dot:nth-child(2){animation-delay:.2s}.typing-dot:nth-child(3){animation-delay:.4s}
+  @keyframes typingBounce{0%,80%,100%{transform:scale(.7);opacity:.5}40%{transform:scale(1);opacity:1}}
+  /* Loading */
+  #loading-overlay{position:fixed;inset:0;background:var(--bg-base);display:flex;align-items:center;justify-content:center;z-index:999;flex-direction:column;gap:12px;transition:opacity .4s}
+  #loading-overlay.hidden{opacity:0;pointer-events:none}
+  .scroll-top{height:var(--space-md);flex-shrink:0}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+  .view.active>*{animation:fadeUp .2s ease both}
+  .view.active>*:nth-child(1){animation-delay:0ms}.view.active>*:nth-child(2){animation-delay:30ms}.view.active>*:nth-child(3){animation-delay:60ms}.view.active>*:nth-child(4){animation-delay:90ms}
+</style>
+</head>
+<body>
+<div id="loading-overlay">
+  <div style="font-size:32px">✦</div>
+  <div style="font-size:11px;color:var(--text-muted);letter-spacing:.2em;text-transform:uppercase">Connecting…</div>
+</div>
+
+<div id="app">
+  <header class="header">
+    <div class="header-wordmark">
+      <svg class="header-logo" viewBox="0 0 28 28" fill="none">
+        <line x1="14" y1="22" x2="7" y2="26" stroke="#d4825a" stroke-width="1.2" stroke-linecap="round"/>
+        <line x1="14" y1="22" x2="14" y2="27" stroke="#d4825a" stroke-width="1.2" stroke-linecap="round"/>
+        <line x1="14" y1="22" x2="21" y2="26" stroke="#d4825a" stroke-width="1.2" stroke-linecap="round"/>
+        <circle cx="7" cy="26" r="1.5" fill="#d4825a" opacity=".7"/>
+        <circle cx="14" cy="27" r="1.5" fill="#d4825a" opacity=".7"/>
+        <circle cx="21" cy="26" r="1.5" fill="#d4825a" opacity=".7"/>
+        <line x1="14" y1="6" x2="14" y2="22" stroke="#d4825a" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M14 10 L8 6 M14 10 L20 6" stroke="#d4825a" stroke-width="1.3" stroke-linecap="round"/>
+        <path d="M14 14 L9 11 M14 14 L19 11" stroke="#d4825a" stroke-width="1.1" stroke-linecap="round" opacity=".7"/>
+        <circle cx="14" cy="4" r="3.5" stroke="#c9a84c" stroke-width="1" opacity=".7" fill="none"/>
+      </svg>
+      <div><div class="header-title">SOVERYN</div></div>
+    </div>
+    <div class="header-actions">
+      <div class="heartbeat-pill"><span class="heartbeat-dot" id="hb-dot"></span><span id="hb-label">—</span></div>
+      <button class="icon-btn" onclick="navigate('queue')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- AGENTS VIEW -->
+  <div class="view active" id="view-agents">
+    <div class="scroll-top"></div>
+    <div class="aetheria-banner">
+      <div class="ab-top">
+        <div class="ab-avatar">✦</div>
+        <div>
+          <div class="ab-name">Aetheria <span class="tier-tag t1">TIER 01</span></div>
+          <div class="ab-status" id="aetheria-status">● Connecting…</div>
+        </div>
+      </div>
+      <div class="ab-thought" id="aetheria-thought">—</div>
+      <div class="ab-actions">
+        <button class="btn-primary" onclick="openChat('aetheria')">Open Chat</button>
+        <button class="btn-ghost" onclick="navigate('mc')">Mission Control</button>
+      </div>
+    </div>
+    <div class="section-label">Tier 01 — Primary</div>
+    <div class="agent-list">
+      <div class="agent-card selected" onclick="openChat('aetheria')">
+        <div class="agent-avatar tier1">✦<div class="status-badge online"></div></div>
+        <div class="agent-info"><div class="agent-name">Aetheria <span class="tier-tag t1">T1</span></div><div class="agent-role">Primary Reasoning &amp; Companion</div></div>
+        <div class="agent-meta"><span class="agent-gpu">GPU 0</span></div>
+      </div>
+    </div>
+    <div class="section-label">Tier 02 — Active Agents</div>
+    <div class="agent-list">
+      <div class="agent-card" onclick="openChat('vett')">
+        <div class="agent-avatar tier2">◈<div class="status-badge online"></div></div>
+        <div class="agent-info"><div class="agent-name">V.E.T.T. <span class="tier-tag t2">T2</span></div><div class="agent-role">Research &amp; Intelligence</div></div>
+        <div class="agent-meta"><span class="agent-gpu">GPU 1</span></div>
+      </div>
+      <div class="agent-card" onclick="openChat('scout')">
+        <div class="agent-avatar tier2">⬡<div class="status-badge online"></div></div>
+        <div class="agent-info"><div class="agent-name">Scout <span class="tier-tag t2">T2</span></div><div class="agent-role">Research &amp; Outreach</div></div>
+        <div class="agent-meta"><span class="agent-gpu">GPU 1</span></div>
+      </div>
+      <div class="agent-card" onclick="openChat('tinker')">
+        <div class="agent-avatar" style="border-color:var(--tier3)">⚙<div class="status-badge idle"></div></div>
+        <div class="agent-info"><div class="agent-name">Tinker</div><div class="agent-role">Engineering &amp; Systems</div></div>
+        <div class="agent-meta"><span class="agent-gpu">GPU 1</span></div>
+      </div>
+      <div class="agent-card" onclick="openChat('ares')">
+        <div class="agent-avatar" style="border-color:var(--status-error)">⬟<div class="status-badge online"></div></div>
+        <div class="agent-info"><div class="agent-name">Ares</div><div class="agent-role">Security &amp; Sentinel</div></div>
+        <div class="agent-meta"><span class="agent-gpu">GPU 1</span></div>
+      </div>
+    </div>
+    <div class="tg-banner">
+      <div style="font-size:20px;flex-shrink:0">✈</div>
+      <div><div class="tg-title">Telegram Active</div><div class="tg-sub">Heartbeat · quiet hrs 23:00–05:00</div></div>
+    </div>
+    <div style="height:var(--space-lg)"></div>
+  </div>
+
+  <!-- CHAT VIEW -->
+  <div class="view" id="view-chat" style="flex-direction:column;padding-bottom:0">
+    <div class="chat-header">
+      <div class="chat-header-avatar" id="chat-avatar">✦</div>
+      <div class="chat-header-info">
+        <div class="chat-header-name" id="chat-agent-name">Aetheria</div>
+        <div class="chat-header-model" id="chat-agent-model">—</div>
+      </div>
+      <button class="icon-btn" onclick="navigate('agents')">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M19 12H5M12 5l-7 7 7 7"/></svg>
+      </button>
+    </div>
+    <div class="chat-messages" id="chat-messages">
+      <div class="msg-row" id="typing-row" style="display:none">
+        <div class="msg-avatar agent">✦</div>
+        <div class="msg-bubble agent" style="padding:0"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>
+      </div>
+    </div>
+    <div class="chat-input-area" style="padding-bottom:max(var(--space-md),env(safe-area-inset-bottom))">
+      <div class="chat-input-wrap">
+        <textarea class="chat-input" id="chat-input" placeholder="Message…" rows="1" onkeydown="handleChatKey(event)" oninput="autoResize(this)"></textarea>
+      </div>
+      <button class="mic-btn" id="mic-btn" onmousedown="startVoice()" onmouseup="stopVoice()" ontouchstart="startVoice(event)" ontouchend="stopVoice(event)">🎙</button>
+      <button class="send-btn" onclick="sendMessage()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- MISSION CONTROL VIEW -->
+  <div class="view" id="view-mc">
+    <div class="scroll-top"></div>
+    <div class="section-label">Compute</div>
+    <div class="mc-grid">
+      <div class="mc-card span2">
+        <div class="mc-card-label">GPU Load</div>
+        <div class="compute-bar-row"><div class="compute-bar-label">GPU 0</div><div class="compute-bar-track"><div class="compute-bar-fill gpu0" id="gpu0-bar" style="width:0%"></div></div><div class="compute-bar-pct" id="gpu0-pct">—</div></div>
+        <div class="compute-bar-row"><div class="compute-bar-label">GPU 1</div><div class="compute-bar-track"><div class="compute-bar-fill gpu1" id="gpu1-bar" style="width:0%"></div></div><div class="compute-bar-pct" id="gpu1-pct">—</div></div>
+        <div class="compute-bar-row"><div class="compute-bar-label">GPU 2</div><div class="compute-bar-track"><div class="compute-bar-fill gpu2" id="gpu2-bar" style="width:0%"></div></div><div class="compute-bar-pct" id="gpu2-pct">—</div></div>
+        <div class="compute-bar-row" style="margin-bottom:0"><div class="compute-bar-label">CPU</div><div class="compute-bar-track"><div class="compute-bar-fill cpu" id="cpu-bar" style="width:0%"></div></div><div class="compute-bar-pct" id="cpu-pct">—</div></div>
+      </div>
+      <div class="mc-card"><div class="mc-card-label">GPU 0 VRAM</div><div class="mc-card-value" id="vram0">—</div><div class="mc-card-sub">/ 48 GB · Blackwell</div></div>
+      <div class="mc-card"><div class="mc-card-label">GPU 1+2 VRAM</div><div class="mc-card-value" id="vram1">—</div><div class="mc-card-sub">/ 96 GB · Quadro NVLink</div></div>
+      <div class="mc-card"><div class="mc-card-label">RAM</div><div class="mc-card-value" id="ram-val">—</div><div class="mc-card-sub">/ 256 GB · EPYC</div></div>
+      <div class="mc-card"><div class="mc-card-label">Temp GPU 0</div><div class="mc-card-value" id="temp0">—</div><div class="mc-card-sub">°C</div></div>
+    </div>
+    <div class="section-label">Agent Comm Bus</div>
+    <div class="mc-card" style="margin:0 var(--space-md)" id="comm-bus">
+      <div class="comm-row"><div class="comm-from" style="color:var(--text-muted)">—</div><div class="comm-msg" style="color:var(--text-muted)">Loading…</div></div>
+    </div>
+    <div style="height:var(--space-xl)"></div>
+  </div>
+
+  <!-- QUEUE VIEW -->
+  <div class="view" id="view-queue">
+    <div class="scroll-top"></div>
+    <div class="queue-summary">
+      <div class="qs-item"><div class="qs-num" id="q-pending" style="color:var(--accent)">—</div><div class="qs-label">Pending</div></div>
+      <div class="qs-divider"></div>
+      <div class="qs-item"><div class="qs-num" style="color:var(--status-online)">—</div><div class="qs-label">Approved</div></div>
+      <div class="qs-divider"></div>
+      <div class="qs-item"><div class="qs-num" style="color:var(--status-error)">—</div><div class="qs-label">Rejected</div></div>
+    </div>
+    <div class="section-label">Pending Review</div>
+    <div class="approval-list" id="approval-list">
+      <div style="padding:var(--space-lg);color:var(--text-muted);font-size:13px;text-align:center">No pending items</div>
+    </div>
+    <div style="height:var(--space-xl)"></div>
+  </div>
+
+  <!-- SETTINGS VIEW -->
+  <div class="view" id="view-settings">
+    <div class="scroll-top"></div>
+    <div class="mc-card" style="margin:0 var(--space-md) var(--space-sm)">
+      <div style="display:flex;align-items:center;gap:var(--space-md)">
+        <div style="font-size:32px">⬡</div>
+        <div>
+          <div style="font-size:15px;font-weight:600">SOVERYN</div>
+          <div style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono)">EPYC 7763 · RTX Pro 5000 · Q RTX 8000×2</div>
+          <div style="font-size:11px;color:var(--text-muted);font-family:var(--font-mono);margin-top:2px" id="server-url-display">—</div>
+        </div>
+      </div>
+    </div>
+    <div class="section-label">Connection</div>
+    <div class="settings-list">
+      <div class="settings-row" onclick="editServerUrl()">
+        <div class="settings-icon">🌐</div>
+        <div class="settings-info"><div class="settings-label">Server URL</div><div class="settings-sub" id="settings-url-sub">Tap to configure</div></div>
+        <div class="settings-chevron"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg></div>
+      </div>
+    </div>
+    <div class="section-label">About</div>
+    <div style="padding:var(--space-md) var(--space-lg);color:var(--text-muted);font-size:12px;line-height:1.8">
+      SOVERYN Mobile · Local multi-agent AI<br>All inference runs on your hardware.<br>No data leaves the machine.
+    </div>
+    <div style="height:var(--space-2xl)"></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <nav class="bottom-nav">
+    <div class="nav-item active" onclick="navigate('agents')" id="nav-agents">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+      <span class="nav-label">Agents</span>
+    </div>
+    <div class="nav-item" onclick="navigate('chat')" id="nav-chat">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span class="nav-label">Chat</span>
+    </div>
+    <div class="nav-item" onclick="navigate('mc')" id="nav-mc">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+      <span class="nav-label">Control</span>
+    </div>
+    <div class="nav-item" onclick="navigate('queue')" id="nav-queue">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      <div class="nav-badge" id="queue-badge" style="display:none">0</div>
+      <span class="nav-label">Queue</span>
+    </div>
+    <div class="nav-item" onclick="navigate('settings')" id="nav-settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <span class="nav-label">Config</span>
+    </div>
+  </nav>
+</div>
+
+<script>
+const DEFAULT_SERVER = 'http://YOUR_SERVER_IP:5000';
+let SERVER = localStorage.getItem('soveryn_server') || DEFAULT_SERVER;
+let currentAgent = 'aetheria';
+let currentView = 'agents';
+let conversationHistory = [];
+let mediaRecorder = null;
+let audioChunks = [];
+let isRecording = false;
+
+const AGENTS = {
+  aetheria:{name:'Aetheria',icon:'✦',model:'Gemma 4 31B Q8 · GPU 0'},
+  vett:{name:'V.E.T.T.',icon:'◈',model:'Research & Intelligence · GPU 1'},
+  scout:{name:'Scout',icon:'⬡',model:'Outreach & Recon · GPU 1'},
+  tinker:{name:'Tinker',icon:'⚙',model:'Engineering · GPU 1'},
+  ares:{name:'Ares',icon:'⬟',model:'Security · GPU 1'},
+};
+
+window.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('settings-url-sub').textContent = SERVER;
+  document.getElementById('server-url-display').textContent = SERVER;
+  loadStatus();
+  loadComms();
+  setTimeout(() => document.getElementById('loading-overlay').classList.add('hidden'), 800);
+});
+
+// Navigation
+const VIEWS = ['agents','chat','mc','queue','settings'];
+function navigate(tab) {
+  VIEWS.forEach(v => {
+    const el = document.getElementById('view-' + v);
+    el.classList.remove('active'); el.style.display = 'none';
+    document.getElementById('nav-' + v)?.classList.remove('active');
+  });
+  const view = document.getElementById('view-' + tab);
+  view.style.display = 'flex';
+  requestAnimationFrame(() => view.classList.add('active'));
+  document.getElementById('nav-' + tab)?.classList.add('active');
+  currentView = tab;
+  if (tab === 'mc') { loadStatus(); loadComms(); }
+}
+
+function openChat(agent) {
+  currentAgent = agent;
+  conversationHistory = [];
+  const info = AGENTS[agent] || AGENTS.aetheria;
+  document.getElementById('chat-agent-name').textContent = info.name;
+  document.getElementById('chat-agent-model').textContent = info.model;
+  document.getElementById('chat-avatar').textContent = info.icon;
+  document.getElementById('chat-messages').innerHTML = `
+    <div class="msg-row" id="typing-row" style="display:none">
+      <div class="msg-avatar agent">${info.icon}</div>
+      <div class="msg-bubble agent" style="padding:0"><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>
+    </div>`;
+  navigate('chat');
+}
+
+// Status polling
+async function loadStatus() {
+  try {
+    const r = await fetch(SERVER + '/status', {signal: AbortSignal.timeout(5000)});
+    if (!r.ok) return;
+    const d = await r.json();
+    document.getElementById('hb-dot').style.background = 'var(--status-online)';
+    document.getElementById('hb-label').textContent = 'Live';
+    document.getElementById('aetheria-status').textContent = '● Active';
+    const gpus = d.gpus || [];
+    ['gpu0','gpu1','gpu2'].forEach((k,i) => {
+      const g = gpus[i]; if (!g) return;
+      const u = g.utilization || 0;
+      document.getElementById(k+'-bar').style.width = u + '%';
+      document.getElementById(k+'-pct').textContent = u + '%';
+    });
+    if (gpus[0]) document.getElementById('vram0').textContent = ((gpus[0].memory_used||0)/1024).toFixed(1);
+    if (gpus[1] || gpus[2]) document.getElementById('vram1').textContent = (((gpus[1]?.memory_used||0)+(gpus[2]?.memory_used||0))/1024).toFixed(1);
+    if (gpus[0]?.temperature) document.getElementById('temp0').textContent = gpus[0].temperature;
+    if (d.cpu_percent !== undefined) { document.getElementById('cpu-bar').style.width = d.cpu_percent + '%'; document.getElementById('cpu-pct').textContent = d.cpu_percent + '%'; }
+    if (d.ram_used_gb) document.getElementById('ram-val').textContent = d.ram_used_gb.toFixed(0);
+  } catch(e) {
+    document.getElementById('hb-dot').style.background = 'var(--status-offline)';
+    document.getElementById('hb-label').textContent = 'Off';
+  }
+}
+
+async function loadComms() {
+  try {
+    const r = await fetch(SERVER + '/comms/data', {signal: AbortSignal.timeout(5000)});
+    if (!r.ok) return;
+    const d = await r.json();
+    const msgs = (d.messages || []).slice(0, 8);
+    if (!msgs.length) return;
+    document.getElementById('comm-bus').innerHTML = msgs.map(m => `
+      <div class="comm-row">
+        <div class="comm-from">${esc(m.from_agent||'—')}</div>
+        <div class="comm-to">→ ${esc(m.to_agent||'?')}</div>
+        <div class="comm-msg">${esc((m.message||'').slice(0,80))}</div>
+        <div class="comm-ts">${(m.timestamp||'').slice(11,16)}</div>
+      </div>`).join('');
+  } catch(e) {}
+}
+
+setInterval(() => { if (currentView === 'mc') loadStatus(); }, 10000);
+
+// Chat
+function autoResize(el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 120) + 'px'; }
+function handleChatKey(e) { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }
+
+function addMessage(role, content, agent) {
+  const msgs = document.getElementById('chat-messages');
+  const tr = document.getElementById('typing-row');
+  const info = AGENTS[agent || currentAgent] || AGENTS.aetheria;
+  const time = new Date().toTimeString().slice(0,5);
+  const row = document.createElement('div');
+  row.className = 'msg-row' + (role === 'user' ? ' user' : '');
+  if (role === 'user') {
+    row.innerHTML = `<div class="msg-bubble user">${esc(content)}</div><div class="msg-time">${time}</div>`;
+  } else {
+    row.innerHTML = `<div class="msg-avatar agent">${info.icon}</div><div><div class="msg-bubble agent">${esc(content)}</div><div class="msg-time">${time}</div></div>`;
+  }
+  msgs.insertBefore(row, tr);
+  msgs.scrollTop = msgs.scrollHeight;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const text = input.value.trim();
+  if (!text) return;
+  input.value = ''; input.style.height = 'auto';
+  addMessage('user', text);
+  conversationHistory.push({role:'user', content:text});
+  showTyping(true);
+  try {
+    const r = await fetch(SERVER + '/chat', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({message:text, agent:currentAgent, conversation_history:conversationHistory.slice(-12), max_tokens:800, temperature:0.75})
+    });
+    const d = await r.json();
+    showTyping(false);
+    const reply = d.response || d.error || 'No response';
+    addMessage('assistant', reply);
+    conversationHistory.push({role:'assistant', content:reply});
+  } catch(e) { showTyping(false); addMessage('assistant', 'Connection error: ' + e.message); }
+}
+
+function showTyping(show) {
+  const tr = document.getElementById('typing-row');
+  if (tr) tr.style.display = show ? 'flex' : 'none';
+  document.getElementById('chat-messages').scrollTop = 99999;
+}
+
+// Voice
+async function startVoice(e) {
+  if (e) e.preventDefault();
+  if (isRecording) return;
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({audio:true});
+    audioChunks = [];
+    const mime = getSupportedMime();
+    mediaRecorder = new MediaRecorder(stream, {mimeType:mime});
+    mediaRecorder.ondataavailable = ev => { if (ev.data.size > 0) audioChunks.push(ev.data); };
+    mediaRecorder.start();
+    isRecording = true;
+    const btn = document.getElementById('mic-btn');
+    btn.classList.add('recording'); btn.textContent = '⏹';
+  } catch(e) { alert('Mic: ' + e.message); }
+}
+
+async function stopVoice(e) {
+  if (e) e.preventDefault();
+  if (!isRecording || !mediaRecorder) return;
+  isRecording = false;
+  const btn = document.getElementById('mic-btn');
+  btn.classList.remove('recording'); btn.textContent = '🎙';
+  mediaRecorder.stop();
+  mediaRecorder.onstop = async () => {
+    const mime = getSupportedMime();
+    const blob = new Blob(audioChunks, {type:mime});
+    mediaRecorder.stream.getTracks().forEach(t => t.stop());
+    showTyping(true);
+    try {
+      const form = new FormData();
+      form.append('audio', blob, 'rec.' + (mime.includes('mp4') ? 'm4a' : 'webm'));
+      form.append('agent', currentAgent);
+      form.append('conversation_history', JSON.stringify(conversationHistory.slice(-12)));
+      const r = await fetch(SERVER + '/speak', {method:'POST', body:form});
+      const d = await r.json();
+      showTyping(false);
+      if (d.transcript) addMessage('user', d.transcript);
+      if (d.response) {
+        addMessage('assistant', d.response);
+        conversationHistory.push({role:'user',content:d.transcript||''});
+        conversationHistory.push({role:'assistant',content:d.response});
+        if (d.audio_url) { const a = new Audio(SERVER + d.audio_url); a.play().catch(()=>{}); }
+      } else if (d.error) { addMessage('assistant', 'Voice error: ' + d.error); }
+    } catch(e) { showTyping(false); addMessage('assistant', 'Voice error: ' + e.message); }
+  };
+}
+
+function getSupportedMime() {
+  return ['audio/webm;codecs=opus','audio/webm','audio/mp4','audio/ogg;codecs=opus'].find(t => MediaRecorder.isTypeSupported(t)) || 'audio/webm';
+}
+
+// Settings
+function editServerUrl() {
+  const url = prompt('SOVERYN Server URL', SERVER);
+  if (url?.trim()) {
+    SERVER = url.trim().replace(/\/$/,'');
+    localStorage.setItem('soveryn_server', SERVER);
+    document.getElementById('settings-url-sub').textContent = SERVER;
+    document.getElementById('server-url-display').textContent = SERVER;
+    loadStatus();
+  }
+}
+
+function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+</script>
+</body>
+</html>
