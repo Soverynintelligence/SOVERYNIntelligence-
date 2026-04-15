@@ -175,8 +175,14 @@ class ImageGenTool(Tool):
             "required": ["prompt"]
         }
 
-    async def execute(self, prompt: str, negative_prompt: str = "blurry, low quality, watermark, text, ugly, deformed",
-                      width: int = 1024, height: int = 1024, steps: int = 30, **kw) -> str:
+    async def execute(self, **kwargs) -> str:
+        prompt = kwargs.get('prompt', '').strip()
+        if not prompt:
+            return "Error: prompt is required for image generation"
+        negative_prompt = kwargs.get('negative_prompt', 'blurry, low quality, watermark, text, ugly, deformed')
+        width  = int(kwargs.get('width',  1024))
+        height = int(kwargs.get('height', 1024))
+        steps  = int(kwargs.get('steps',  30))
         import asyncio
         loop = asyncio.get_running_loop()
         return await loop.run_in_executor(None, self._run, prompt, negative_prompt, width, height, steps)
